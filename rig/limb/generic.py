@@ -77,6 +77,20 @@ class FKOffsetBlend(FKOffset):
     def build(self):
         self.useConstraint = True #must be true for blend to work
         FKOffset.build(self)
+
+class FKChain(limbBase.Limb):
+    '''simple FK chain, given a start and endjoint create FK ctrls between'''
+    def begin(self):
+        limbBase.Limb.begin(self)
+
+        #sanity checks on start and endJoint
+        if not self.startJoint or not cmds.objExists(self.startJoint):
+            raise RuntimeError("invalid startJoint: %s" % self.startJoint)
+        if not self.endJoint or not cmds.objExists(self.endJoint):
+            raise RuntimeError("invalid endJoint: %s" % self.endJoint)
+    def build(self):
+        self.addPinBlend()
+        self.addFKChain(self.startJoint,self.endJoint,self.pinBlend)
          
 class FKIKChain(limbBase.Limb):
     '''Simple FK and IK chain, with FKIK blend, meant for at least three joints (not single chain IK)

@@ -31,8 +31,12 @@ class CharacterRig(mpRigBase.AnimRig):
         pelvis = limbGen.FKOffset()
         pelvis.name.part='Main'
         pelvis.startJoint='Root'
-        self.addLimb(pelvis)
 
+        spine = limbGen.FKChain()
+        spine.name.part='Spine'
+        spine.startJoint='Spine_01'
+        spine.endJoint='Spine_04'
+        
         legL = limbGen.FKIKChain()
         legL.name.part = 'Leg'
         legL.name.loc = 'L'
@@ -47,13 +51,17 @@ class CharacterRig(mpRigBase.AnimRig):
         armL.endJoint = 'Arm_L_03'
         armR = armL.mirror()
 
+
+        self.addLimb(pelvis)
+        self.addLimb(spine)
         self.addLimb(legL)
         self.addLimb(legR)
         self.addLimb(armL)
         self.addLimb(armR)
 
         #Wire Limbs
+        spine > 'Root'
         legL > 'Root'
         legR > 'Root'
-        armL > 'Root'
-        armR > 'Root'
+        armL > 'Clav_L_02'
+        armR > 'Clav_R_02'
