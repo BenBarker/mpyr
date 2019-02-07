@@ -80,7 +80,6 @@ class Name(object):
         '''given an object, attempt to set this object based on its name'''
         #try another name object:
         if isinstance(obj,Name):
-            print"init as name obj"
             self.sep = obj.sep
             self.loc = obj.loc
             self.part = obj.part
