@@ -63,21 +63,47 @@ def getLimbNodeShape(ctrlName):
     if limbNode:
         return cmds.listRelatives(limbNode,s=True)[0]
     return None
- 
-def getLimbSet(ctrlName):
-    '''given a ctrl, get the main object set for the limb'''
-    return cmds.listSets(object=getCtrlSet(ctrlName))[0]
 
 def getCtrlSet(ctrlName):
     '''given a ctrl, return the ctrl object set. This is the
-    set under the limb set that is ctrlsFK, IK, etc.
+    set under the limb set that contains the ctrlsFK and ctrlsIK sets
     '''
-    return cmds.listSets(object=ctrlName)[0]
+    currentSets = cmds.listSets(object=ctrlName)
+
+    for objSet in currentSets:
+        #if the current set is ctrlsIK or ctrlsFK set, walk up one
+        if objSet.endswith(name.CTRLSETFK) or objSet.endswith(name.CTRLSETIK):
+            return cmds.listSets(object=objSet)[0]
+        elif objSet.endswith(name.CTRLSET):
+            return objSet
+    return None
+
+def getCtrlSetFK(ctrlName):
+    '''given a ctrl, return the FK ctrl object set. A more specific version
+    of getCtrlSet
+    '''
+    ctrlSet = getCtrlSet(ctrlName)
+    contents = cmds.sets(ctrlSet,q=True)
+    for objset in contents:
+        if objset.endswith(name.CTRLSETFK):
+            return objset
+    return None
+
+def getCtrlSetIK(ctrlName):
+    '''given a ctrl, return the IK ctrl object set. A more specific version
+    of getCtrlSet
+    '''
+    ctrlSet = getCtrlSet(ctrlName)
+    contents = cmds.sets(ctrlSet,q=True)
+    for objset in contents:
+        if objset.endswith(name.CTRLSETIK):
+            return objset
+    return None
 
 def getLimbCtrls(ctrlName):
     '''given a ctrl return a list of all the ctrls in that limb'''
     ctrls = []
-    limbSet = getLimbSet(ctrlName)
+    limbSet = getCtrlSet(ctrlName)
     allSets = cmds.sets(limbSet,q=True)
     for ctrlSet in allSets:
         for obj in cmds.sets(ctrlSet,q=True):
@@ -86,7 +112,7 @@ def getLimbCtrls(ctrlName):
     return ctrls
     
 def getJointFromCtrl(ctrlName):
-    '''given a ctrl find the joint it is driving'''
+    '''given a ctrl find the joint it is driving, attempts to look through constraints'''
     #put nodeTypes and their output attrs here
     cnsAttrs = {
         'pointConstraint':['ctx','cty','ctz'],
@@ -123,8 +149,18 @@ def resetCtrl(ctrlName):
                 cmds.setAttr(ctrlName + ".%s%s"%(attr,axis),dv)
             except RuntimeError:
                 pass
-    #todo: user attrs
-    
+    for udAttr in cmds.listAttr(ctrlName,ud=True) or []:
+        fullname = '%s.%s'%(ctrlName,udAttr)
+        if not cmds.addAttr(fullname,q=True,k=True): #skip nonkeyable attributes
+            continue
+        #float cast in try/except to skip/supress warnings for non numeric attrs
+        try:
+            float(cmds.getAttr(fullname))
+            default = cmds.addAttr(fullname,q=True,defaultValue=True)
+            cmds.setAttr(fullname,default)
+        except (TypeError,RuntimeError),e:
+            continue
+        
 def resetSelectedCtrls():
     '''reset the current selection of ctrls'''
     for ctrlName in getSelectedCtrls():
@@ -178,7 +214,28 @@ def addPickParent(ctrlName,parent):
 def addPickChild(ctrlName,child):
     '''add a pickwalk child to the given ctrl'''
     addPickParent(child,ctrlName)
-    
+
+def addSnapParent(ctrlName,parent):
+    '''designate the parent(s) as the snap target for IK/FK snapping. 
+    creates a msg attribute that the tools follow later.
+    Multiple snap parents are only used for ik aim controls.
+    '''
+    if not cmds.objExists(ctrlName + ".snapParents"):
+        cmds.addAttr(ctrlName,ln='snapParents',at='message',multi=True)
+    if not cmds.objExists(parent + ".snapChildren"):
+        cmds.addAttr(parent,ln='snapChildren',at='message',multi=True)
+    childIndex,parentIndex= (0,0)
+    childCons = cmds.listConnections(ctrlName + ".snapParents",s=1,d=0) or []
+    if parent in childCons: #already connected
+        return
+    childIndex = len(childCons)
+    parCons = cmds.listConnections(parent + ".snapChildren",s=0,d=1) or []
+    parentIndex = len(parCons)
+    cmds.connectAttr(
+        parent + ".snapChildren[%s]"%parentIndex, 
+        ctrlName + ".snapParents[%s]"%childIndex,
+        f=True) 
+
 def getPickParents(ctrlName):
     '''return the given ctrl's pick Parents as a list'''
     if cmds.objExists(ctrlName + ".pickParents"):
@@ -190,55 +247,74 @@ def getPickChildren(ctrlName):
     if cmds.objExists(ctrlName + ".pickChildren"):
         return cmds.listConnections(ctrlName + ".pickChildren",s=0,d=1) or []
     return []
-    
-def pickWalkUp(ctrls=None,add=False):
-    '''performs a pickwalk up. If add = True the selection is added instead of replaced
-    If no ctrl list is given then the current selection is used.
+
+def addMirrorInfo(ctrl):
+    '''given a ctrl add mirror info attributes to the ctrl, so poses can be mirrored.
+    This method needs to do a dot product on each axis and set the mirror info based on
+    if the axes point towards or away. Then it sets the mirror info attr to be 1 or -1
+    based on that test (per axis). This is used later to mirror poses.
+
+    Channel box attributes are copied over, and depending on the -1 or 1 they are reversed
+    or straight copied.
+
+    Mirror Info is added by the base rig class at the very end of building.
     '''
-    if not ctrls:
-        try:
-            ctrls = cmds.ls(sl=True)
-        except TypeError:
-            return 
-    newSelectionList = []
-    if add:
-        newSelectionList = cmds.ls(sl=True)
-    for ctrlName in ctrls:
-        pars = getPickParents(ctrlName)
-        if pars:
-            newSelectionList.extend(pars)
-    if newSelectionList:
-        cmds.select(newSelectionList,r=True)
+    other = findMirrorCtrl(ctrl)
+    if not other:
+        return
+    mirrorInfo = [1,1,1]
+    oXform = rigmath.Transform(other)
+    cXform = rigmath.Transform(ctrl)
+    cXform.reflect()
+    cx = cXform.xAxis()
+    cy = cXform.yAxis()
+    cz = cXform.zAxis()
+    ox = oXform.xAxis()
+    oy = oXform.yAxis()
+    oz = oXform.zAxis()
     
-        
-def pickWalkDown(ctrls=None,add=False):
-    '''performs a pickwalk down. If add=True the selection is added instead of replaced
-    If no ctrl list is given the current selection is used
+    if cx.dot(ox) <= 0:
+        mirrorInfo[0] = -1
+    if cy.dot(oy) <= 0:
+        mirrorInfo[1] = -1
+    if cz.dot(oz) <= 0:
+        mirrorInfo[2] = -1
+    
+    if not cmds.objExists(ctrl + ".mirrorInfo"):
+        cmds.addAttr(ctrl,ln='mirrorInfo',at='double3',k=False)
+        cmds.addAttr(ctrl,ln='mirrorInfoX',at='double',parent='mirrorInfo',k=False)
+        cmds.addAttr(ctrl,ln='mirrorInfoY',at='double',parent='mirrorInfo',k=False)
+        cmds.addAttr(ctrl,ln='mirrorInfoZ',at='double',parent='mirrorInfo',k=False)
+    
+    cmds.setAttr(ctrl + ".mirrorInfo", mirrorInfo[0], mirrorInfo[1], mirrorInfo[2])
+
+def getMirrorInfo(node):
+    '''returns a list of the node's mirror info data, or None if attr not found'''
+    if not cmds.objExists(node + ".mirrorInfo"):
+        return None
+    return cmds.getAttr(node + ".mirrorInfo")[0]
+
+def findMirrorCtrl(node):
+    '''return the mirror node for this node. 
+    Return None if none found. Returns the same node on center nodes, since those get
+    mirrored in place.
     '''
-    if not ctrls:
-        try:
-            ctrls = cmds.ls(sl=True)
-        except TypeError:
-            return
-    newSelectionList = []
-    if add:
-        newSelectionList = cmds.ls(sl=True)
-    for ctrlName in ctrls:
-        children = getPickChildren(ctrlName)
-        if children:
-            newSelectionList.extend(children)
-    if newSelectionList:
-        cmds.select(newSelectionList,r=True)
-            
+    nameOfCtrl = name.Name(node)
+    preMirror = nameOfCtrl.get(noCheck=True)
+    nameOfCtrl.mirror()
+    postMirror = nameOfCtrl.get(noCheck=True)
+    mirroredCtrlName = node.replace(preMirror,postMirror)
+    if cmds.objExists(mirroredCtrlName):
+        return mirroredCtrlName
+    return None
+    
 def mirrorCtrl(ctrlName):
     '''copy this ctrl's pose onto its mirror ctrl'''
-    opCtrl = ctrl.findMirrorCtrl(ctrlName)
+    opCtrl = findMirrorCtrl(ctrlName)
     if not opCtrl:
         return
-    mirrorInfo = ctrl.getMirrorInfo(ctrlName)
-    print "mirrorInfo",mirrorInfo
+    mirrorInfo = getMirrorInfo(ctrlName)
     if not mirrorInfo:
-        print "no mirror info"
         return
     #mirror to opCtrl
     for index,attr in enumerate(['tx','ty','tz']):
@@ -276,7 +352,45 @@ def mirrorSelectedLimbs():
     '''mirror every limb involved in the current ctrl selection'''
     for ctrlName in getSelectedCtrls():
         mirrorLimb(ctrlName)
-    
+
+def pickWalkUp(ctrls=None,add=False):
+    '''performs a pickwalk up. If add = True the selection is added instead of replaced
+    If no ctrl list is given then the current selection is used.
+    '''
+    if not ctrls:
+        try:
+            ctrls = cmds.ls(sl=True)
+        except TypeError:
+            return 
+    newSelectionList = []
+    if add:
+        newSelectionList = cmds.ls(sl=True)
+    for ctrlName in ctrls:
+        pars = getPickParents(ctrlName)
+        if pars:
+            newSelectionList.extend(pars)
+    if newSelectionList:
+        cmds.select(newSelectionList,r=True)
+        
+def pickWalkDown(ctrls=None,add=False):
+    '''performs a pickwalk down. If add=True the selection is added instead of replaced
+    If no ctrl list is given the current selection is used
+    '''
+    if not ctrls:
+        try:
+            ctrls = cmds.ls(sl=True)
+        except TypeError:
+            return
+    newSelectionList = []
+    if add:
+        newSelectionList = cmds.ls(sl=True)
+    for ctrlName in ctrls:
+        children = getPickChildren(ctrlName)
+        if children:
+            newSelectionList.extend(children)
+    if newSelectionList:
+        cmds.select(newSelectionList,r=True)
+            
 def selectLimb(ctrlName):
     '''given a ctrl select the entire limb ctrls'''
     cmds.select(getLimbCtrls(ctrlName),r=True)
@@ -331,75 +445,73 @@ def keySelectedCharacter():
         allCtrlsInChar = getAllCtrlsByParent(charName)
         for charCtrl in allCtrlsInChar:
             keyCtrl(charCtrl)
-            
-def snapIKFK(ikctrl, resetPV=False, pvPosMult= 2):
+
+def getAimVector(start,mid,end,distance=0.5):
+    '''Given three points (like shoulder,elbow,wrist joints) compute vector for aim
+    location. This can be used to create/snap IK aim in a way that won't move an existing
+    chain. Distance is a cosmetic multiplier.
+    Returns Vector object of aim position.
     '''
-    Given an ik ctrl, snap the ik to the fk.  Uses messages on the ikctrl to find fk ctrls.
-    resetPV: If True, zero out the pv transforms 
+    startV = rigmath.Vector(start)
+    midV = rigmath.Vector(mid)
+    endV = rigmath.Vector(end)
+    chainV = endV-startV
+    upperV = midV-startV
+    chainLength = chainV.length()
+    chainV.normalize()
+    upperV.normalize()
+    chainNormal = chainV.cross(upperV)
+    elbowV = chainNormal.cross(chainV)
+    elbowV.normalize()
+
+    aimV = elbowV*chainLength*distance #get an aethetic distance from the chain
+    aimV += midV 
+    return aimV
+            
+def snapIKFK(ikctrl):
+    '''Given an ik ctrl, snap the ik to the fk for that limb.  Uses messages on the ikctrl to find fk ctrls.
     pvPosMult: increase distance of poleVector control. Doesn't affect IK solution, just distance.
     '''
+    # get all IK ctrls
+    ikCtrlSet = getCtrlSetIK(ikctrl) or [ikctrl]
+    allIKCtrls = cmds.sets(ikCtrlSet,q=True)
 
-    # Get the controls from the ik.message
-    startFK = cmds.listConnections(ikctrl+".startFK")[0]
-    midFK = cmds.listConnections(ikctrl+".midFK")[0]
-    endFK = cmds.listConnections(ikctrl+".endFK")[0]
-    
-    pv = cmds.listConnections(ikctrl+".pv")[0]
-    
-    #Align IK ctrl to end FK ctrl straight up
-    cmds.xform(ikctrl,ws=True,m=cmds.xform(endFK,q=True,ws=True,m=True))
-    
-    ## Pole Vector ##
-    # Get vector info as array
-    sVecRaw = cmds.xform(startFK, worldSpace=True, q=True, t=True)
-    mVecRaw = cmds.xform(midFK, worldSpace=True, q=True, t=True)
-    eVecRaw = cmds.xform(endFK, worldSpace=True, q=True, t=True)
-    
-    # Make the array a vector
-    sVec = om.MVector(sVecRaw[0], sVecRaw[1], sVecRaw[2])
-    mVec = om.MVector(mVecRaw[0], mVecRaw[1], mVecRaw[2])
-    eVec = om.MVector(eVecRaw[0], eVecRaw[1], eVecRaw[2])
-    
-    midPoint = ( eVec + sVec ) / 2
-    pvPos = ( mVec - midPoint ) * pvPosMult + midPoint
-    
-    #Move the PV Ctrl
-    if resetPV:
-        pvzero = pv.replace("Ctrl", "Zero")
-        attr.unlockAndShow(pvzero, ["t", "r"])
-        cmds.xform(pvzero, t=(pvPos[0],pvPos[1],pvPos[2]), worldSpace=True)
-        cmds.xform(pvzero, ro=(0,0,0), worldSpace=True)
-        attr.lockAndHide(pvzero, ["t", "r"])
-    else:
-        cmds.move(pvPos[0], pvPos[1], pvPos[2], pv)
-    
-    #Turn on IK
-    attrctrl = cmds.listConnections(ikctrl+".attrCtrl")[0]
-    cmds.setAttr(attrctrl+".ik", 1)
-    
-    return True
-    
+    #loop through twice, first doing end ctrls, then doing aims
+    for ctrl in allIKCtrls:
+        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        #if there is one snap parent this is an end effector ctrl
+        #do a simple snap
+        if len(snapParents)==1:
+            cmds.xform(ctrl,ws=True,m=cmds.xform(snapParents[0],q=True,ws=True,m=True))
+
+    for ctrl in allIKCtrls:
+        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        #Use three parents to compute aim position
+        if len(snapParents)==3:
+            aimV = getAimVector(snapParents[0],snapParents[1],snapParents[2])
+            aimXform = rigmath.Transform(aimV)
+            cmds.xform(ctrl,ws=True,m=aimXform.get())
+    # Turn on IK
+    limbNode = getLimbNodeShape(allIKCtrls[0])
+    cmds.setAttr(limbNode+"."+name.FKIKBLENDATTR,1)
+
 def snapFKIK(fkctrl):
     ''' given an fk ctrl, snap all of the fkctrls to the ik joints.  
     Uses messages on the ikctrl to find fk ctrls. 
     '''
-    startIK = cmds.listConnections(fkctrl+".startIK")[0]
-    midIK = cmds.listConnections(fkctrl+".midIK")[0]
-    endIK = cmds.listConnections(fkctrl+".endIK")[0]
-    
-    startFK = cmds.listConnections(fkctrl+".startFK")[0]
-    midFK = cmds.listConnections(fkctrl+".midFK")[0]
-    endFK = cmds.listConnections(fkctrl+".endFK")[0]
-    
-    ik = cmds.listConnections(fkctrl+".IK")[0]
-        
-    cmds.xform(startFK,ws=True,m=cmds.xform(startIK,q=True,ws=True,m=True))
-    cmds.xform(midFK,ws=True,m=cmds.xform(midIK,q=True,ws=True,m=True))
-    cmds.xform(endFK,ws=True,m=cmds.xform(endIK,q=True,ws=True,m=True))
+    # get all IK ctrls
+    fkCtrlSet = getCtrlSetFK(fkctrl) or [fkctrl]
+    allFKCtrls = cmds.sets(fkCtrlSet,q=True)
+
+    #loop through twice, first doing end ctrls, then doing aims
+    for ctrl in allFKCtrls:
+        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        if len(snapParents)==1:
+            cmds.xform(ctrl,ws=True,m=cmds.xform(snapParents[0],q=True,ws=True,m=True))
     
     # Turn on FK
-    attrctrl = cmds.listConnections(fkctrl+".attrCtrl")[0]
-    cmds.setAttr(attrctrl+".ik", 0)
+    limbNode = getLimbNodeShape(allFKCtrls[0])
+    cmds.setAttr(limbNode+"."+name.FKIKBLENDATTR,0)
     
 def snapSelectedIKFKCtrl():
     '''Snap IK to FK'''

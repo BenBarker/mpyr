@@ -37,6 +37,8 @@ import mpyr.lib.rig as mpRig
 reload(mpAttr)
 reload(mpName)
 reload(mpCtrl)
+reload(mpRig)
+reload(mpJoint)
 
 rigLog = logging.getLogger('rig.limb')
 
@@ -284,13 +286,14 @@ class Limb(object):
             #first ctrl should do translation of joint, so chain moves with ctrls
             if idx == 0:
                 cmds.pointConstraint(fkCtrl,joint,mo=True)
-            cmds.orientConstraint(fkCtrl,joint,mo=True)
+            cmds.orientConstraint(fkCtrl,joint,mo=True) #every joint driven by ori cns
             ctrlParent = fkCtrl
-            mpAttr.lockAndHide(fkCtrl,'t')
+            mpAttr.lockAndHide(fkCtrl,'t') #translate not needed on fk chain
             fkCtrls.append(fkCtrl)
             if prevCtrl:
-                mpRig.addPickParent(fkCtrl,prevCtrl)
+                mpRig.addPickParent(fkCtrl,prevCtrl) #for pickwalk later
             prevCtrl = fkCtrl
+            mpRig.addSnapParent(fkCtrl,joint) #for snapping FK to IK
         return fkCtrls
 
     def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
@@ -300,6 +303,8 @@ class Limb(object):
         Returns two lists: (fkCtrls,ikCtrls)
         '''
         jointList = mpJoint.getJointList(startJoint,endJoint)
+        if len(jointList)<3:
+            raise RuntimeError("FKIKChain needs at least three joints")
         fkCtrls = self.addFKChain(startJoint,endJoint,localParent)
 
         #constrain fk ctrls to local/world
@@ -308,7 +313,7 @@ class Limb(object):
 
         #Create IK Chain
         self.name.desc = 'iKHandle'
-        handle,effector = cmds.ikHandle(n=self.name.get(),solver='ikRPsolver',sticky="on",sj=startJoint,ee=endJoint)
+        handle,effector = cmds.ikHandle(n=self.name.get(),solver='ikRPsolver',sj=startJoint,ee=endJoint)
         self.name.desc = 'effector'
         effector = cmds.rename(effector,self.name.get())
         cmds.parent(handle,self.noXform)
@@ -316,25 +321,9 @@ class Limb(object):
         #-find the location of the aim
         midJointIdx = int(len(jointList)/2)
         midJoint = jointList[midJointIdx]
-
-        #Create the aim vector for ik Chain
-        #use the "triangle" of the chain to find the right vector, 
-        #ie coming out of the elbow/knee, perpendicular to the normal of the triangle
-        startV = mpMath.Vector(startJoint)
-        midV = mpMath.Vector(midJoint)
         endV = mpMath.Vector(endJoint)
-        chainV = endV-startV
-        upperV = midV-startV
-        chainLength = chainV.length()
-        chainV.normalize()
-        upperV.normalize()
-        chainNormal = chainV.cross(upperV)
-        elbowV = chainNormal.cross(chainV)
-        elbowV.normalize()
+        aimV = mpRig.getAimVector(startJoint,midJoint,endJoint)
 
-        aimV = elbowV*chainLength*0.5 #get an aethetic distance from the chain
-        aimV += midV 
-        
         aimZero,aimCtrl = self.addCtrl('aim',type="IK",shape='cross',parent=worldParent,xform=aimV)
         endZero,endCtrl = self.addCtrl("end",type="IK",shape='cube',parent=worldParent,xform=endV)
         mpAttr.lockAndHide(endCtrl,'r')
@@ -361,6 +350,12 @@ class Limb(object):
 
         mpRig.addPickParent(aimCtrl,endCtrl)
         mpRig.addPickParent(endCtrl,aimCtrl)
+
+        #setup IK->FK snapping messages
+        mpRig.addSnapParent(endCtrl, fkCtrls[-1]) 
+        mpRig.addSnapParent(aimCtrl, fkCtrls[0])
+        mpRig.addSnapParent(aimCtrl, fkCtrls[1])
+        mpRig.addSnapParent(aimCtrl, fkCtrls[2])
 
         return(fkCtrls,(aimCtrl,endCtrl))
 

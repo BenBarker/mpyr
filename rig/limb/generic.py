@@ -4,6 +4,8 @@ import maya.cmds as cmds
 import mpyr.lib.rigmath as mpMath
 import limbBase
 
+reload(limbBase)
+
 class WorldOffset(limbBase.Limb):
     '''A character's root offset. 
     This is a special limb in that it's always built by the

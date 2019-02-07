@@ -23,6 +23,7 @@ import mpyr.lib.dag as mpDag
 import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.attr as mpAttr
 import mpyr.lib.name as mpName
+import mpyr.lib.rig as mpRig
 
 import mpyr.rig.limb.generic as limbGen
 
@@ -177,7 +178,7 @@ class Rig(object):
         #add mirror info to every ctrl since we are in root pose now
         for limbObj in self.limbs:
             for ctrlNode in limbObj.ctrls:
-                mpCtrl.addMirrorInfo(ctrlNode)
+                mpRig.addMirrorInfo(ctrlNode)
 
         
     def setRigNameDefault(self):
@@ -359,18 +360,18 @@ class Rig(object):
                         ikCtrls.append(node)
                     else:
                         ctrls.append(node)
-            limbSet = cmds.sets(em=True,n=limb.limbNode + "_SET")
+            limbSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSET)
             cmds.sets(limbSet,add=self.masterSet)
             if fkCtrls:
-                fkSet = cmds.sets(em=True,n=limb.limbNode + "_CTRLSFK")                            
+                fkSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSETFK)                            
                 cmds.sets(fkSet,add=limbSet)
                 cmds.sets(fkCtrls,add=fkSet)
             if ikCtrls:
-                ikSet = cmds.sets(em=True,n=limb.limbNode + "_CTRLSIK")
+                ikSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSETIK)  
                 cmds.sets(ikSet,add=limbSet)
                 cmds.sets(ikCtrls,add=ikSet)
             if ctrls:
-                ctrlSet = cmds.sets(em=True,n=limb.limbNode + "_CTRLS")
+                ctrlSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSET)  
                 cmds.sets(ctrlSet,add=limbSet)
                 cmds.sets(ctrls,add=ctrlSet)
                 

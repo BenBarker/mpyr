@@ -24,7 +24,19 @@ LIMBBLENDATTR = 'localWorldBlend'   #default name for pinBlend attribute
 FKCTRL = 'FKCTRL'                   #name suffixes for ctrls
 IKCTRL = 'IKCTRL'
 CTRL = 'CTRL'
-FKIKBLENDATTR = 'FKIK'
+OBJSET = 'SET'                     #name suffixes for ctrl object sets on limbs
+CTRLSET = 'CTRLS'
+CTRLSETFK = 'CTRLSFK'
+CTRLSETIK = 'CTRLSIK'
+FKIKBLENDATTR = 'FKIK'              #any attr that blends IK/FK 
+
+def getLocation(node):
+    '''given a node, return the location string. Return None if not found'''
+    ctrlNameParts = node.split(SEP)
+    for part in ctrlNameParts:
+        if part in (LEFT,RIGHT,MID):
+            return part
+    return None
 
 
 class Name(object):
