@@ -1,0 +1,1 @@
+'''Example rigs and skeletons'''
