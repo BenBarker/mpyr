@@ -26,15 +26,17 @@ import inspect
 import copy
 import maya.cmds as cmds
 
-import lib.attr
-import lib.name
-import lib.ctrl
-import lib.cns
-import lib.rigmath
+import mpyr.lib.attr as mpAttr 
+import mpyr.lib.name as mpName
+import mpyr.lib.ctrl as mpCtrl
+import mpyr.lib.cns as  mpCns
+import mpyr.lib.rigmath as mpMath
+import mpyr.lib.joint as mpJoint
+import mpyr.lib.rig as mpRig
 
-reload(lib.attr)
-reload(lib.name)
-reload(lib.ctrl)
+reload(mpAttr)
+reload(mpName)
+reload(mpCtrl)
 
 rigLog = logging.getLogger('rig.limb')
 
@@ -71,7 +73,8 @@ class Limb(object):
                 when rig building finishes.
     ''' 
     def __init__(self):
-        self.name = lib.name.Name()
+        object.__init__(self)
+        self.name = mpName.Name()
         self.name.part = "Limb"
         self.name.loc = "M"
         
@@ -108,7 +111,7 @@ class Limb(object):
         Sets the .pinParent attr on the limb to this object, and returns it.
         '''
         rigLog.debug('adding pin parent')
-        self.name.desc = lib.name.PINPARENT
+        self.name.desc = mpName.PINPARENT
         self.pinParent = cmds.group(em=True,n=self.name.get(),p=self.limbNode)
         #try to move the pinParent to start joint, for a sensible pivot
         if self.startJoint:
@@ -120,7 +123,7 @@ class Limb(object):
         Sets the .pinWorld attr on the limb to this object, and returns it.
         '''
         rigLog.debug('adding pin world')
-        self.name.desc = lib.name.PINWORLD
+        self.name.desc = mpName.PINWORLD
         self.pinWorld = cmds.group(em=True,n=self.name.get(),p=self.limbNode)
         if self.startJoint:
             cmds.xform(self.pinWorld,ws=True,m=cmds.xform(self.startJoint,ws=True,q=True,m=True))
@@ -131,13 +134,13 @@ class Limb(object):
         between them. Sets a .pinBlend attr on the limb and also returns it.
         '''
         rigLog.debug('added pin blend setup')
-        blender = self.addAttrLimb(ln=lib.name.LIMBBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
+        blender = self.addAttrLimb(ln=mpName.LIMBBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
         self.addPinParent()
         self.addPinWorld()
-        self.name.desc = lib.name.PINBLEND
+        self.name.desc = mpName.PINBLEND
         self.pinBlend = cmds.group(em=True,n=self.name.get(),p=self.limbNode)
         cmds.parentConstraint(self.pinParent,self.pinBlend,skipRotate=('x','y','z'))
-        lib.cns.blendConstraint(
+        mpCns.blendConstraint(
             self.pinParent,
             self.pinWorld,
             self.pinBlend,
@@ -182,15 +185,15 @@ class Limb(object):
 
         name should be simple, like "01", or "Upper". The limb takes care of the rest.
         
-        The name convention used here is specified in lib.name, which is also used 
+        The name convention used here is specified in mpName, which is also used 
         to sort controls after building into sets by rigBase.Rig.addLimbSets().
         '''
         if type == "FK":
-            self.name.desc = name + lib.name.FKCTRL
+            self.name.desc = name + mpName.FKCTRL
         elif type == "IK":
-            self.name.desc = name + lib.name.IKCTRL
+            self.name.desc = name + mpName.IKCTRL
         else:
-            self.name.desc = name + lib.name.CTRL
+            self.name.desc = name + mpName.CTRL
             
         #scale size by rigScale, if it exists
         if self.rig:
@@ -199,7 +202,7 @@ class Limb(object):
         #Make the ctrl
         if not parent:
             parent = self.limbNode
-        zero,control = lib.ctrl.addCtrl(self.name.get(),
+        zero,control = mpCtrl.addCtrl(self.name.get(),
             shape=shape,
             size=size,
             segments=segments,
@@ -223,17 +226,17 @@ class Limb(object):
         if self.limbNode:
             return
         #else, create:
-        self.name.desc = lib.name.LIMBNAME
+        self.name.desc = mpName.LIMBNAME
         self.limbNode = cmds.createNode('transform',n=self.name.get())
 
         #add empty shape node to store any attributes created by addAttrLimb
-        shape = cmds.createNode('mesh',p=self.limbNode,n=self.limbNode+lib.name.LIMBSHAPE)
+        shape = cmds.createNode('mesh',p=self.limbNode,n=self.limbNode+mpName.LIMBSHAPE)
         
         if self.rig:
             cmds.parent(self.limbNode,self.rig.limbNode)
             
         # create visibility attrs
-        lib.attr.addAttrSwitch(self.limbNode+".controls", value=1)
+        mpAttr.addAttrSwitch(self.limbNode+".controls", value=1)
 
     def addAttrLimb(self,*args,**kwargs):
         '''Adds an attribute to an empty shape node parented to the top transform of 
@@ -272,9 +275,10 @@ class Limb(object):
         '''Create chain of FK ctrls on given joints, returns list of created ctrls
         - parent = parent of the first ctrl
         '''
-        jointList = lib.joint.getJointList(startJoint,endJoint)
+        jointList = mpJoint.getJointList(startJoint,endJoint)
         ctrlParent = parent
         fkCtrls = []
+        prevCtrl = None
         for idx,joint in enumerate(jointList):
             zero,fkCtrl = self.addCtrl('%02d'%idx,type="FK",shape='sphere',parent=ctrlParent,xform=joint)
             #first ctrl should do translation of joint, so chain moves with ctrls
@@ -282,8 +286,11 @@ class Limb(object):
                 cmds.pointConstraint(fkCtrl,joint,mo=True)
             cmds.orientConstraint(fkCtrl,joint,mo=True)
             ctrlParent = fkCtrl
-            lib.attr.lockAndHide(fkCtrl,'t')
+            mpAttr.lockAndHide(fkCtrl,'t')
             fkCtrls.append(fkCtrl)
+            if prevCtrl:
+                mpRig.addPickParent(fkCtrl,prevCtrl)
+            prevCtrl = fkCtrl
         return fkCtrls
 
     def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
@@ -292,7 +299,7 @@ class Limb(object):
         - worldParent = drives rotation when "world" space is blended on. Drives IK translate and rotate.
         Returns two lists: (fkCtrls,ikCtrls)
         '''
-        jointList = lib.joint.getJointList(startJoint,endJoint)
+        jointList = mpJoint.getJointList(startJoint,endJoint)
         fkCtrls = self.addFKChain(startJoint,endJoint,localParent)
 
         #constrain fk ctrls to local/world
@@ -313,9 +320,9 @@ class Limb(object):
         #Create the aim vector for ik Chain
         #use the "triangle" of the chain to find the right vector, 
         #ie coming out of the elbow/knee, perpendicular to the normal of the triangle
-        startV = lib.rigmath.Vector(startJoint)
-        midV = lib.rigmath.Vector(midJoint)
-        endV = lib.rigmath.Vector(endJoint)
+        startV = mpMath.Vector(startJoint)
+        midV = mpMath.Vector(midJoint)
+        endV = mpMath.Vector(endJoint)
         chainV = endV-startV
         upperV = midV-startV
         chainLength = chainV.length()
@@ -328,29 +335,32 @@ class Limb(object):
         aimV = elbowV*chainLength*0.5 #get an aethetic distance from the chain
         aimV += midV 
         
-        aimCtrl = self.addCtrl('aim',type="IK",shape='cross',parent=worldParent,xform=aimV)
-        endCtrl = self.addCtrl("IK",type="IK",shape='cube',parent=worldParent,xform=endV)
-        lib.attr.lockAndHide(endCtrl[-1],'r')
-        cmds.pointConstraint(endCtrl[-1], handle,mo=True)
-        cmds.poleVectorConstraint(aimCtrl[-1],handle)
+        aimZero,aimCtrl = self.addCtrl('aim',type="IK",shape='cross',parent=worldParent,xform=aimV)
+        endZero,endCtrl = self.addCtrl("end",type="IK",shape='cube',parent=worldParent,xform=endV)
+        mpAttr.lockAndHide(endCtrl,'r')
+        cmds.pointConstraint(endCtrl, handle,mo=True)
+        cmds.poleVectorConstraint(aimCtrl,handle)
 
         #make aim float between end and root of ik system
-        cmds.parentConstraint(endCtrl[-1],worldParent,aimCtrl[0],mo=True,skipRotate=('x','y','z'))
+        cmds.parentConstraint(endCtrl,worldParent,aimZero,mo=True,skipRotate=('x','y','z'))
 
         #Construct the blend
-        FKIKblender = self.addAttrLimb(ln=lib.name.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
+        FKIKblender = self.addAttrLimb(ln=mpName.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
         cmds.connectAttr(FKIKblender, handle+'.ikBlend')
 
         #switch ctrl vis
         for ctrl in (aimCtrl,endCtrl):
-            shape = cmds.listRelatives(ctrl[-1],s=True)[0]
-            lib.attr.connectWithAdd(FKIKblender,shape+'.v',0.4999999)
+            shape = cmds.listRelatives(ctrl,s=True)[0]
+            mpAttr.connectWithAdd(FKIKblender,shape+'.v',0.4999999)
         for ctrl in fkCtrls:
             shape = cmds.listRelatives(ctrl,s=True)[0]
-            adder = lib.attr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
-            revNode = lib.attr.connectWithReverse(adder+".output",shape+'.v',force=True)
+            adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
+            revNode = mpAttr.connectWithReverse(adder+".output",shape+'.v',force=True)
         cmds.setAttr(handle+'.v',0)
-        lib.attr.lockAndHide(handle,'v')
+        mpAttr.lockAndHide(handle,'v')
+
+        mpRig.addPickParent(aimCtrl,endCtrl)
+        mpRig.addPickParent(endCtrl,aimCtrl)
 
         return(fkCtrls,(aimCtrl,endCtrl))
 
@@ -361,8 +371,8 @@ class Limb(object):
         Limbs with funky attributes should implement their own mirror if needed.
         '''
         rigLog.debug('mirroring limb')
-        leftToken = lib.name.SEP + lib.name.LEFT + lib.name.SEP
-        rightToken = lib.name.SEP + lib.name.RIGHT + lib.name.SEP
+        leftToken = mpName.SEP + mpName.LEFT + mpName.SEP
+        rightToken = mpName.SEP + mpName.RIGHT + mpName.SEP
         
         newLimb = self.__class__()
         for attr,data in inspect.getmembers(self):
@@ -381,8 +391,8 @@ class Limb(object):
                     else:
                         newLimb.__dict__[attr] = value
                 #if it's a Name object make a new one, and copy with flipped left or right
-                elif isinstance(value,lib.name.Name):
-                    newName = lib.name.Name(value)
+                elif isinstance(value,mpName.Name):
+                    newName = mpName.Name(value)
                     newName.mirror()
                     newLimb.__dict__[attr] = newName
                 #if it's a number straight copy

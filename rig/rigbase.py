@@ -19,12 +19,12 @@ import getpass
 import logging
 import maya.cmds as cmds
 
-import lib.dag
-import lib.ctrl
-import lib.attr
-import lib.name
+import mpyr.lib.dag as mpDag
+import mpyr.lib.ctrl as mpCtrl
+import mpyr.lib.attr as mpAttr
+import mpyr.lib.name as mpName
 
-import rig.limb.generic as limbGen
+import mpyr.rig.limb.generic as limbGen
 
 rigLog = logging.getLogger('rig')
 
@@ -177,7 +177,7 @@ class Rig(object):
         #add mirror info to every ctrl since we are in root pose now
         for limbObj in self.limbs:
             for ctrlNode in limbObj.ctrls:
-                lib.ctrl.addMirrorInfo(ctrlNode)
+                mpCtrl.addMirrorInfo(ctrlNode)
 
         
     def setRigNameDefault(self):
@@ -197,7 +197,7 @@ class Rig(object):
         if cmds.objExists(self.rigName):
             raise RuntimeError("Could not create main rig node. Node of name %s already exists."%self.rigName)
         self.rigNode = cmds.createNode('transform',n=self.rigName)
-        lib.attr.addAttrSwitch(self.rigNode + ".isRig",keyable=False,type='bool',value=1)
+        mpAttr.addAttrSwitch(self.rigNode + ".isRig",keyable=False,type='bool',value=1)
         rigLog.debug('created root node %s'%self.rigNode)
 
         return self.rigNode
@@ -210,7 +210,7 @@ class Rig(object):
         if not self.rootJoint:
             children = cmds.listRelatives(self.skeletonNode,type='joint') or []
             for child in children:
-                if lib.name.ROOTJOINT in child.lower():
+                if mpName.ROOTJOINT in child.lower():
                     self.rootJoint = child
                     break
         if not self.rootJoint:
@@ -248,7 +248,7 @@ class Rig(object):
         
         #Import file
         nodeList = self.fileImport(fullPath)
-        rootNodes = lib.dag.getRootNodes(nodeList)
+        rootNodes = mpDag.getRootNodes(nodeList)
         
         rigLog.debug('file import done, %s new root nodes' % len(rootNodes))
         
@@ -295,9 +295,9 @@ class Rig(object):
         cmds.setAttr(self.rigNode + ".builtBy", lock=True)
 
         for node in (self.limbNode,self.geoNode,self.skeletonNode,self.rigNode):
-            lib.attr.lockAndHide(node,["t","r","s","v"])
+            mpAttr.lockAndHide(node,["t","r","s","v"])
         for limb in self.limbs:
-            lib.attr.lockAndHide(limb.limbNode,["t","r","s","v"])
+            mpAttr.lockAndHide(limb.limbNode,["t","r","s","v"])
 
     def cleanupDanglingLimbs(self):
         '''Clean up pinParents and pinWorlds not constrained after build.
@@ -352,10 +352,10 @@ class Rig(object):
             ikCtrls = []
             allNodes = cmds.listRelatives(limb.limbNode,ad=True)
             for node in allNodes:
-                if lib.ctrl.isCtrl(node):
-                    if node.endswith(lib.name.FKCTRL):
+                if mpCtrl.isCtrl(node):
+                    if node.endswith(mpName.FKCTRL):
                         fkCtrls.append(node)
-                    elif node.endswith(lib.name.IKCTRL):
+                    elif node.endswith(mpName.IKCTRL):
                         ikCtrls.append(node)
                     else:
                         ctrls.append(node)

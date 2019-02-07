@@ -78,14 +78,14 @@ class Name(object):
             nameParts = obj.split(self.sep)
             locIdx = None
             if len(nameParts) > 1:
-                if 'L' in nameParts:
-                    self.loc = 'L'
+                if LEFT in nameParts:
+                    self.loc = LEFT
                     locIdx = nameParts.index(self.loc)
-                elif 'R' in nameParts:
-                    self.loc = 'R'
+                elif RIGHT in nameParts:
+                    self.loc = RIGHT
                     locIdx = nameParts.index(self.loc)
                 else:
-                    self.loc = 'M'
+                    self.loc = MID
             else:
                 self.desc = nameParts[0]
                      

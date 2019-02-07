@@ -190,8 +190,9 @@ def addMirrorInfo(ctrl):
 
     Mirror Info is added by the base rig class at the very end of building.
     '''
-
+    print "adding mirror info to" , ctrl
     other = findMirrorCtrl(ctrl)
+    print "\t other:",other
     if not other:
         return
     mirrorInfo = [1,1,1]
@@ -228,18 +229,17 @@ def getMirrorInfo(ctrl):
 
 def findMirrorCtrl(ctrl):
     '''return the mirror ctrl for this ctrl. 
-    Return None if none found. Returns the same ctrl on cn_ ctrls, since those get
+    Return None if none found. Returns the same ctrl on center ctrls, since those get
     mirrored in place.
     '''
-    if ctrl.startswith('cn_'):
-        return ctrl
-    opCtrl = None
-    if ctrl.startswith('lf_'):
-        opCtrl = ctrl.replace('lf_','rt_')
-    elif ctrl.startswith('rt_'):
-        opCtrl = ctrl.replace('rt_','lf_')
-    if opCtrl and cmds.objExists(opCtrl):
-        return opCtrl
+    nameOfCtrl = name.Name(ctrl)
+    preMirror = nameOfCtrl.get(noCheck=True)
+    nameOfCtrl.mirror()
+    postMirror = nameOfCtrl.get(noCheck=True)
+    mirroredCtrlName = ctrl.replace(preMirror,postMirror)
+    print "mirroredCtrlName",mirroredCtrlName
+    if cmds.objExists(mirroredCtrlName):
+        return mirroredCtrlName
     return None
             
 def makeCube(size=1.0,**kwargs):

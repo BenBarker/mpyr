@@ -1,17 +1,17 @@
 '''A few simple limbs on a simple skeleton'''
 import os
 import maya.cmds as cmds
-import rig.rigbase
-import rig.limb.generic as limbGen
+import mpyr.rig.rigbase as mpRigBase
+import mpyr.rig.limb.generic as limbGen
 
-reload(rig.rigbase)
+reload(mpRigBase)
 reload(limbGen)
 
-class CharacterRig(rig.rigbase.AnimRig):
+class CharacterRig(mpRigBase.AnimRig):
     def __init__(self):
-        rig.rigbase.AnimRig.__init__(self)
+        mpRigBase.AnimRig.__init__(self)
 
-        self.rigName = "Steve"
+        self.rigName = "ChainExample"
 
         #Skeleton paths can be specified by user, convention, or database.
         #For this example I keep it next to the .py file, so I find based

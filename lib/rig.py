@@ -44,6 +44,25 @@ def getCharacter(obj):
         if cmds.objExists(part + ".isRig"):
             return part
     return None
+
+def getLimbNode(ctrlName):
+    '''given a ctrl (or any node parented under a limb) return the limb node transform'''
+    #walk up hierarchy looking for named limb node
+    fullName = cmds.ls(ctrlName,long=True)[0]
+    allPars = fullName.split('|')
+    allPars.reverse()
+    for par in allPars:
+        if par.endswith(name.LIMBNAME):
+            return par
+    return None
+
+def getLimbNodeShape(ctrlName):
+    '''given an object in the limb return the instanced shape node that holds animatable
+    limb attributes'''
+    limbNode = getLimbNode(ctrlName)
+    if limbNode:
+        return cmds.listRelatives(limbNode,s=True)[0]
+    return None
  
 def getLimbSet(ctrlName):
     '''given a ctrl, get the main object set for the limb'''
@@ -217,24 +236,21 @@ def mirrorCtrl(ctrlName):
     if not opCtrl:
         return
     mirrorInfo = ctrl.getMirrorInfo(ctrlName)
-    #print "mirrorInfo",mirrorInfo
+    print "mirrorInfo",mirrorInfo
     if not mirrorInfo:
-        #print "no mirror info"
+        print "no mirror info"
         return
     #mirror to opCtrl
-    transmult = -1
-    if opCtrl == ctrlName:
-        transmult = 1
     for index,attr in enumerate(['tx','ty','tz']):
         try:
-            cmds.setAttr(opCtrl+"."+attr, cmds.getAttr(ctrlName+"."+attr) * mirrorInfo[index]*transmult)
-        except Exception, e:
-            pass
+            cmds.setAttr(opCtrl+"."+attr, cmds.getAttr(ctrlName+"."+attr) * mirrorInfo[index])
+        except RuntimeError, e:
+            pass #silently skip locked attrs
     for index,attr in enumerate(['rx','ry','rz']):
         try:
             cmds.setAttr(opCtrl+"."+attr, cmds.getAttr(ctrlName+"."+attr) * mirrorInfo[index]*-1)
-        except Exception, e:
-            pass
+        except RuntimeError, e:
+            pass #silently skip locked attrs
             
 def mirrorSelectedCtrls():
     '''mirror each ctrl that is selected'''
@@ -245,7 +261,17 @@ def mirrorLimb(ctrlName):
     '''given a ctrl copy its entire limb's pose onto the mirror limb'''
     for lctrl in getLimbCtrls(ctrlName):
         mirrorCtrl(lctrl)
-        
+
+    #copy over limb attributes (like FKIK switches)
+    limbAttrNode = getLimbNodeShape(ctrlName)
+    otherLimbNode = ctrl.findMirrorCtrl(ctrlName)
+    if limbAttrNode and otherLimbNode and (limbAttrNode!=otherLimbNode):
+        for attr in cmds.listAttr(limbAttrNode,ud=True) or []:
+            try:
+                cmds.setAttr('%s.%s'%(otherLimbNode,attr), cmds.getAttr('%s.%s'%(limbAttrNode,attr)))
+            except RuntimeError:
+                print "failed to mirror limb attribute %s.%s"%(limbAttrNode,attr)
+
 def mirrorSelectedLimbs():
     '''mirror every limb involved in the current ctrl selection'''
     for ctrlName in getSelectedCtrls():
