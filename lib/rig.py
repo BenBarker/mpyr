@@ -340,7 +340,7 @@ def mirrorLimb(ctrlName):
 
     #copy over limb attributes (like FKIK switches)
     limbAttrNode = getLimbNodeShape(ctrlName)
-    otherLimbNode = ctrl.findMirrorCtrl(ctrlName)
+    otherLimbNode = findMirrorCtrl(ctrlName)
     if limbAttrNode and otherLimbNode and (limbAttrNode!=otherLimbNode):
         for attr in cmds.listAttr(limbAttrNode,ud=True) or []:
             try:
