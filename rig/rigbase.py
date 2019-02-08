@@ -80,13 +80,13 @@ class Rig(object):
         '''Builds the rig by calling the creation methods in the correct 
         order.
         '''
-        rigLog.info('pre build')
+        rigLog.info('beginning rig build')
         self.begin()
-        rigLog.info('build')
+        rigLog.info('building rig')
         self.build()
         rigLog.info('ending build')
         self.end()
-        rigLog.info('rig build complete')
+        rigLog.info('rig complete')
         
     def begin(self):
         '''Pre build actions'''
@@ -237,7 +237,7 @@ class Rig(object):
         If no group is made the root nodes are returned. If a group is made the group is 
         returned.
         '''
-        rigLog.debug('importing file %s'%fileName)
+        rigLog.info('importing file %s'%fileName)
 
         if not os.path.exists(fileName):
             raise IOError("File path %s not found, cannot getFile"%fileName)
@@ -289,7 +289,7 @@ class Rig(object):
             
     def lock(self):
         '''Lock and hide nodes that shouldn't be touched'''
-        rigLog.debug('locking rig')
+        rigLog.info('locking rig')
 
         cmds.setAttr(self.rigNode + ".rigVersion", lock=True)
         cmds.setAttr(self.rigNode + ".buildDate", lock=True)
@@ -305,6 +305,7 @@ class Rig(object):
         See if they are connected to something, and if not constrain to
         the world offset.
         '''
+        rigLog.info('constraining floating limbs')
         for limb in self.limbs:
             if limb.pinWorld:
                 #check for cns
@@ -346,7 +347,7 @@ class Rig(object):
         FK/IK ctrls are sorted into sets by name. It's specified here, and when the ctrls are made, 
         by the convention in lib/name.py
         '''
-        rigLog.debug('adding limb ctrl sets')
+        rigLog.info('adding limb ctrl sets')
         for limb in self.limbs:
             ctrls = []
             fkCtrls = []
@@ -379,7 +380,7 @@ class Rig(object):
     def addLimb(self,limbObj):
         '''build the given limb obj and add it to the rig'''
         limbObj.rig = self
-        rigLog.debug("adding limb %s" % limbObj)
+        rigLog.info("adding limb %s" % limbObj)
         limbObj.create()
         self.limbs.append(limbObj)
         

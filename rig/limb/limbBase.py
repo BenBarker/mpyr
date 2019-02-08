@@ -96,6 +96,7 @@ class Limb(object):
         
     def __gt__(self,other):
         '''Override greater than (>) to do pinParent constraining'''
+        rigLog.info('wiring %s pinParent to %s'%(self,other))
         if self.pinParent and cmds.objExists(self.pinParent):
             cmds.parentConstraint(other,self.pinParent,mo=True)
         else:
@@ -103,6 +104,7 @@ class Limb(object):
             
     def __rshift__(self,other):
         '''Override rshift (>>) to do pinWorld constraining'''
+        rigLog.info('wiring %s pinWorld to %s'%(self,other))
         if cmds.objExists(self.pinWorld):
             cmds.parentConstraint(other,self.pinWorld,mo=True)
         else:
@@ -157,13 +159,13 @@ class Limb(object):
         '''This method builds the limb by calling the creation methods in the correct 
         order.
         '''
-        rigLog.info('adding limb %s'%self)
+        rigLog.info('begin limb %s'%self)
         self.begin()
         rigLog.debug('limb build')
         self.build()
         rigLog.debug('ending limb build')
         self.end()
-        rigLog.debug('limb build complete')
+        rigLog.info('limb build complete')
         
     def begin(self):
         '''Limb build setup. Make a top level node, some nodes that are on all limbs'''
@@ -190,6 +192,7 @@ class Limb(object):
         The name convention used here is specified in mpName, which is also used 
         to sort controls after building into sets by rigBase.Rig.addLimbSets().
         '''
+        rigLog.debug("Adding %s control %s"%(type,name))
         if type == "FK":
             self.name.desc = name + mpName.FKCTRL
         elif type == "IK":
@@ -251,6 +254,7 @@ class Limb(object):
         #I'd like to return the attr name instead of addAttr's default None,
         #so pull it out of the kwargs and return
         attrName = kwargs.get('ln',kwargs.get('longName',None))
+        rigLog.debug("adding limb attribute %s"%attrName)
         cmds.addAttr(limbNodeShape,*args,**kwargs)
 
         return limbNodeShape + "." + attrName
@@ -270,13 +274,13 @@ class Limb(object):
             inst = cmds.instance(limbShape)
             instShape = cmds.listRelatives(inst,s=True)[0]
             cmds.parent('%s|%s'%(inst[0],instShape),ctrl,s=True,r=True)
-            rigLog.debug('- %s' % ctrl)
             cmds.delete(inst)
 
     def addFKChain(self,startJoint,endJoint,parent):
         '''Create chain of FK ctrls on given joints, returns list of created ctrls
         - parent = parent of the first ctrl
         '''
+        rigLog.debug("adding FKChain")
         jointList = mpJoint.getJointList(startJoint,endJoint)
         ctrlParent = parent
         fkCtrls = []
@@ -312,6 +316,7 @@ class Limb(object):
         cmds.parentConstraint(localParent,firstFKZero,mo=True)
 
         #Create IK Chain
+        rigLog.debug("Adding IK Chain")
         self.name.desc = 'iKHandle'
         handle,effector = cmds.ikHandle(n=self.name.get(),solver='ikRPsolver',sj=startJoint,ee=endJoint)
         self.name.desc = 'effector'
