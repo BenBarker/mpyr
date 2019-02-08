@@ -6,9 +6,9 @@ import attr
 import name
 import rigmath
 
-reload(attr)
-reload(name)
-reload(rigmath)
+#reload(attr)
+#reload(name)
+#reload(rigmath)
 
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
     '''make a ctrl with a given shape out of a curve, parented under a zero null
@@ -72,8 +72,6 @@ def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,
             except RuntimeError:
                 raise RuntimeError("Couldn't find object or transform %s to match"%xform)
         cmds.xform(zero,ws=True,m=matchMatrix)
-
-    
     return (zero,crv) 
 
 def changeCtrlShape(ctrl,newShape,shapeXform=None,size=1.0,segments=13):
@@ -97,7 +95,6 @@ def changeCtrlShape(ctrl,newShape,shapeXform=None,size=1.0,segments=13):
     cmds.connectAttr(newShape + ".local", oldShape + ".create")
     cmds.getAttr(oldShape + ".local")
     cmds.delete(newCrv)
-
 
 def getCurve(shape,size=1.0,segments=13):
     '''given a shape name return the corresponding curve.
@@ -162,7 +159,6 @@ def getMayaColor(color):
               "aquamarine", "pink", "peach", "light yellow", "sea green", "light brown",
               "barf","lime green","light green","turquoise","royal blue","dark violet",
               "dark magenta"]
-    
     try:
         return colors[color]
     except TypeError: #not given an int
@@ -256,4 +252,3 @@ def makeSquare(size=1.0,**kwargs):
     verts = ( [m,0,m],[nm,0,m],[nm,0,nm],[m,0,nm] )
     return cmds.curve(d=1, p=verts,k=range(len(verts)))
     
-        

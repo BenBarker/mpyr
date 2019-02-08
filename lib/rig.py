@@ -2,8 +2,7 @@
 library functions for working with rigs, useful for animation
 tools, like on a marking menu.
 '''
-import maya.cmds     as cmds
-import maya.OpenMaya as om
+import maya.cmds as cmds
 
 import rigmath   
 import attr
@@ -41,7 +40,7 @@ def getCharacter(obj):
     nameParts = fullName.split('|')
     nameParts.reverse()
     for part in nameParts:
-        if cmds.objExists(part + ".isRig"):
+        if cmds.objExists(part+'.isRig'):
             return part
     return None
 
@@ -129,7 +128,7 @@ def getJointFromCtrl(ctrlName):
                 #test other nodes
                 try:
                     for output in cnsAttrs[cmds.nodeType(connection)]:
-                        drivenObj = cmds.listConnections(connection+"."+output, s=0,d=1)
+                        drivenObj = cmds.listConnections(connection+'.'+output, s=0,d=1)
                         if not drivenObj:
                             continue
                         elif cmds.nodeType(drivenObj[0]) == 'joint':
@@ -146,7 +145,7 @@ def resetCtrl(ctrlName):
             if attr == 's':
                 dv = 1.0
             try:
-                cmds.setAttr(ctrlName + ".%s%s"%(attr,axis),dv)
+                cmds.setAttr(ctrlName+'.%s%s'%(attr,axis),dv)
             except RuntimeError:
                 pass
     for udAttr in cmds.listAttr(ctrlName,ud=True) or []:
@@ -193,22 +192,22 @@ def resetSelectedCharacter():
         
 def addPickParent(ctrlName,parent):
     '''add a pickwalk parent to the given ctrl'''
-    if not cmds.objExists(ctrlName + ".pickParents"):
+    if not cmds.objExists(ctrlName+'.pickParents'):
         cmds.addAttr(ctrlName,ln='pickParents',at='message',multi=True)
-    if not cmds.objExists(parent + ".pickChildren"):
+    if not cmds.objExists(parent+'.pickChildren'):
         cmds.addAttr(parent,ln='pickChildren',at='message',multi=True)
     childIndex,parentIndex,idx = (0,0,0)
-    childCons = cmds.listConnections(parent + ".pickChildren[%s]"%idx,s=0,d=1) or []
+    childCons = cmds.listConnections(parent+'.pickChildren[%s]'%idx,s=0,d=1) or []
     if ctrlName in childCons:
         return
     childIndex = len(childCons)
-    parCons = cmds.listConnections(ctrlName + ".pickParents[%s]"%idx,s=0,d=1) or []
+    parCons = cmds.listConnections(ctrlName+'.pickParents[%s]'%idx,s=0,d=1) or []
     if parent in parCons:
         return
     parentIndex = len(parCons)
     cmds.connectAttr(
-        parent + ".pickChildren[%s]"%childIndex, 
-        ctrlName + ".pickParents[%s]"%parentIndex,
+        parent+'.pickChildren[%s]'%childIndex, 
+        ctrlName+'.pickParents[%s]'%parentIndex,
         f=True) 
     
 def addPickChild(ctrlName,child):
@@ -220,32 +219,32 @@ def addSnapParent(ctrlName,parent):
     creates a msg attribute that the tools follow later.
     Multiple snap parents are only used for ik aim controls.
     '''
-    if not cmds.objExists(ctrlName + ".snapParents"):
+    if not cmds.objExists(ctrlName+'.snapParents'):
         cmds.addAttr(ctrlName,ln='snapParents',at='message',multi=True)
-    if not cmds.objExists(parent + ".snapChildren"):
+    if not cmds.objExists(parent+'.snapChildren'):
         cmds.addAttr(parent,ln='snapChildren',at='message',multi=True)
     childIndex,parentIndex= (0,0)
-    childCons = cmds.listConnections(ctrlName + ".snapParents",s=1,d=0) or []
+    childCons = cmds.listConnections(ctrlName+'.snapParents',s=1,d=0) or []
     if parent in childCons: #already connected
         return
     childIndex = len(childCons)
-    parCons = cmds.listConnections(parent + ".snapChildren",s=0,d=1) or []
+    parCons = cmds.listConnections(parent+'.snapChildren',s=0,d=1) or []
     parentIndex = len(parCons)
     cmds.connectAttr(
-        parent + ".snapChildren[%s]"%parentIndex, 
-        ctrlName + ".snapParents[%s]"%childIndex,
+        parent+'.snapChildren[%s]'%parentIndex, 
+        ctrlName+'.snapParents[%s]'%childIndex,
         f=True) 
 
 def getPickParents(ctrlName):
     '''return the given ctrl's pick Parents as a list'''
-    if cmds.objExists(ctrlName + ".pickParents"):
-        return cmds.listConnections(ctrlName + ".pickParents",s=1,d=0) or []
+    if cmds.objExists(ctrlName+'.pickParents'):
+        return cmds.listConnections(ctrlName+'.pickParents',s=1,d=0) or []
     return []
     
 def getPickChildren(ctrlName):
     '''return the given ctrl's pick children as a list'''
-    if cmds.objExists(ctrlName + ".pickChildren"):
-        return cmds.listConnections(ctrlName + ".pickChildren",s=0,d=1) or []
+    if cmds.objExists(ctrlName+'.pickChildren'):
+        return cmds.listConnections(ctrlName+'.pickChildren',s=0,d=1) or []
     return []
 
 def addMirrorInfo(ctrl):
@@ -280,19 +279,19 @@ def addMirrorInfo(ctrl):
     if cz.dot(oz) <= 0:
         mirrorInfo[2] = -1
     
-    if not cmds.objExists(ctrl + ".mirrorInfo"):
+    if not cmds.objExists(ctrl+'.mirrorInfo'):
         cmds.addAttr(ctrl,ln='mirrorInfo',at='double3',k=False)
         cmds.addAttr(ctrl,ln='mirrorInfoX',at='double',parent='mirrorInfo',k=False)
         cmds.addAttr(ctrl,ln='mirrorInfoY',at='double',parent='mirrorInfo',k=False)
         cmds.addAttr(ctrl,ln='mirrorInfoZ',at='double',parent='mirrorInfo',k=False)
     
-    cmds.setAttr(ctrl + ".mirrorInfo", mirrorInfo[0], mirrorInfo[1], mirrorInfo[2])
+    cmds.setAttr(ctrl+'.mirrorInfo', mirrorInfo[0], mirrorInfo[1], mirrorInfo[2])
 
 def getMirrorInfo(node):
     '''returns a list of the node's mirror info data, or None if attr not found'''
-    if not cmds.objExists(node + ".mirrorInfo"):
+    if not cmds.objExists(node+'.mirrorInfo'):
         return None
-    return cmds.getAttr(node + ".mirrorInfo")[0]
+    return cmds.getAttr(node+'.mirrorInfo')[0]
 
 def findMirrorCtrl(node):
     '''return the mirror node for this node. 
@@ -319,12 +318,12 @@ def mirrorCtrl(ctrlName):
     #mirror to opCtrl
     for index,attr in enumerate(['tx','ty','tz']):
         try:
-            cmds.setAttr(opCtrl+"."+attr, cmds.getAttr(ctrlName+"."+attr) * mirrorInfo[index])
+            cmds.setAttr(opCtrl+'.'+attr, cmds.getAttr(ctrlName+'.'+attr) * mirrorInfo[index])
         except RuntimeError, e:
             pass #silently skip locked attrs
     for index,attr in enumerate(['rx','ry','rz']):
         try:
-            cmds.setAttr(opCtrl+"."+attr, cmds.getAttr(ctrlName+"."+attr) * mirrorInfo[index]*-1)
+            cmds.setAttr(opCtrl+'.'+attr, cmds.getAttr(ctrlName+'.'+attr) * mirrorInfo[index]*-1)
         except RuntimeError, e:
             pass #silently skip locked attrs
             
@@ -346,7 +345,7 @@ def mirrorLimb(ctrlName):
             try:
                 cmds.setAttr('%s.%s'%(otherLimbNode,attr), cmds.getAttr('%s.%s'%(limbAttrNode,attr)))
             except RuntimeError:
-                print "failed to mirror limb attribute %s.%s"%(limbAttrNode,attr)
+                print 'failed to mirror limb attribute %s.%s'%(limbAttrNode,attr)
 
 def mirrorSelectedLimbs():
     '''mirror every limb involved in the current ctrl selection'''
@@ -477,23 +476,39 @@ def snapIKFK(ikctrl):
     allIKCtrls = cmds.sets(ikCtrlSet,q=True)
 
     #loop through twice, first doing end ctrls, then doing aims
+    results = dict()
     for ctrl in allIKCtrls:
-        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        if not cmds.objExists(ctrl+'.snapParents'):
+            results[ctrl]=None
+            continue
+        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
         #if there is one snap parent this is an end effector ctrl
         #do a simple snap
         if len(snapParents)==1:
-            cmds.xform(ctrl,ws=True,m=cmds.xform(snapParents[0],q=True,ws=True,m=True))
+            results[ctrl]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
+            
 
     for ctrl in allIKCtrls:
-        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        if not cmds.objExists(ctrl+'.snapParents'):
+            results[ctrl]=None
+            continue
+        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
         #Use three parents to compute aim position
         if len(snapParents)==3:
             aimV = getAimVector(snapParents[0],snapParents[1],snapParents[2])
             aimXform = rigmath.Transform(aimV)
-            cmds.xform(ctrl,ws=True,m=aimXform.get())
+            results[ctrl]=aimXform.get()
+
+    for i in range(2): #bug fix for some IK limbs that need multiple snaps to reach the goal
+        for ctrl,value in results.iteritems():
+            if not value:
+                resetCtrl(ctrl)
+            else:
+                cmds.xform(ctrl,ws=True,m=value)
+
     # Turn on IK
     limbNode = getLimbNodeShape(allIKCtrls[0])
-    cmds.setAttr(limbNode+"."+name.FKIKBLENDATTR,1)
+    cmds.setAttr(limbNode+'.'+name.FKIKBLENDATTR,1)
 
 def snapFKIK(fkctrl):
     ''' given an fk ctrl, snap all of the fkctrls to the ik joints.  
@@ -503,22 +518,32 @@ def snapFKIK(fkctrl):
     fkCtrlSet = getCtrlSetFK(fkctrl) or [fkctrl]
     allFKCtrls = cmds.sets(fkCtrlSet,q=True)
 
-    #loop through twice, first doing end ctrls, then doing aims
+    #loop through getting transforms, then apply them.
+    results = dict()
     for ctrl in allFKCtrls:
-        snapParents = cmds.listConnections(ctrl+".snapParents",s=1,d=0) or []
+        if not cmds.objExists(ctrl+'.snapParents'):
+            results[ctrl]=None 
+            continue
+        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
         if len(snapParents)==1:
-            cmds.xform(ctrl,ws=True,m=cmds.xform(snapParents[0],q=True,ws=True,m=True))
+            results[ctrl]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
+            
+    for ctrl,value in results.iteritems():
+        if not value:
+            resetCtrl(ctrl)
+        else:
+            cmds.xform(ctrl,ws=True,m=value)
     
     # Turn on FK
     limbNode = getLimbNodeShape(allFKCtrls[0])
-    cmds.setAttr(limbNode+"."+name.FKIKBLENDATTR,0)
+    cmds.setAttr(limbNode+'.'+name.FKIKBLENDATTR,0)
     
 def snapSelectedIKFKCtrl():
     '''Snap IK to FK'''
     sel = cmds.ls(sl=True)[0]
-    attrctrl = cmds.listConnections(sel+".attrCtrl")[0]
+    attrctrl = cmds.listConnections(sel+'.attrCtrl')[0]
     
-    if sel.find("FK") != -1:
-        snapIKFK(cmds.listConnections(attrctrl+".IK")[0])
+    if sel.find('FK') != -1:
+        snapIKFK(cmds.listConnections(attrctrl+'.IK')[0])
     else:
-        snapFKIK(cmds.listConnections(attrctrl+".startFK")[0])
+        snapFKIK(cmds.listConnections(attrctrl+'.startFK')[0])

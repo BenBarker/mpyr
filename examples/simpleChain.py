@@ -4,9 +4,6 @@ import maya.cmds as cmds
 import mpyr.rig.rigbase as mpRigBase
 import mpyr.rig.limb.generic as limbGen
 
-reload(mpRigBase)
-reload(limbGen)
-
 class CharacterRig(mpRigBase.AnimRig):
     def __init__(self):
         mpRigBase.AnimRig.__init__(self)

@@ -22,14 +22,14 @@ class WorldOffset(limbBase.Limb):
     def build(self):
         #make pyramids for world offsets
         ctrlXform = mpMath.Transform()
-        ctrlXform.scale(5)
-        zero, c1 = self.addCtrl('01',type="FK",shape='pyramid',parent=self.limbNode,shapeXform=ctrlXform)
+        ctrlXform.scale(2)
+        zero, c1 = self.addCtrl('01',type='FK',shape='pyramid',parent=self.limbNode,shapeXform=ctrlXform)
         
         ctrlXform.scale(0.7)
-        zero, c2 = self.addCtrl('02',type="FK",shape='pyramid',parent=c1,shapeXform=ctrlXform)
+        zero, c2 = self.addCtrl('02',type='FK',shape='pyramid',parent=c1,shapeXform=ctrlXform)
         
         ctrlXform.scale(0.7)
-        zero, c3 = self.addCtrl('03',type="FK",shape='pyramid',parent=c2,shapeXform=ctrlXform)
+        zero, c3 = self.addCtrl('03',type='FK',shape='pyramid',parent=c2,shapeXform=ctrlXform)
         
 class FKOffset(limbBase.Limb):
     '''simple offset control. One control driving one joint.
@@ -47,7 +47,7 @@ class FKOffset(limbBase.Limb):
         limbBase.Limb.begin(self)
         #sanity checks on start and endJoint
         if not self.startJoint or not cmds.objExists(self.startJoint):
-            raise RuntimeError("invalid startJoint: %s" % self.startJoint)
+            raise RuntimeError('invalid startJoint: %s' % self.startJoint)
 
     def addPin(self):
         self.pin = self.addPinParent()
@@ -55,14 +55,13 @@ class FKOffset(limbBase.Limb):
     def build(self):
         self.addPin()
         
-        ctrlXform = mpMath.Transform(self.startJoint)
-        zero,c1 = self.addCtrl('01',type="FK",shape='sphere',parent=self.pin,xform=self.startJoint)
+        zero,c1 = self.addCtrl('01',type='FK',shape='sphere',parent=self.pin,xform=self.startJoint)
         
         if self.useConstraint:
             cmds.orientConstraint(c1,self.startJoint,mo=True)
         else:
             for attr in ['rx','ry','rz']:
-                cmds.connectAttr(c1 + "." + attr, self.startJoint + "." + attr,f=True)
+                cmds.connectAttr(c1+'.'+attr, self.startJoint+'.'+attr,f=True)
         if self.translate:
             cmds.pointConstraint(c1,self.startJoint,mo=True)
         cmds.parentConstraint(self.pin,zero,mo=True)
@@ -85,9 +84,9 @@ class FKChain(limbBase.Limb):
 
         #sanity checks on start and endJoint
         if not self.startJoint or not cmds.objExists(self.startJoint):
-            raise RuntimeError("invalid startJoint: %s" % self.startJoint)
+            raise RuntimeError('invalid startJoint: %s' % self.startJoint)
         if not self.endJoint or not cmds.objExists(self.endJoint):
-            raise RuntimeError("invalid endJoint: %s" % self.endJoint)
+            raise RuntimeError('invalid endJoint: %s' % self.endJoint)
     def build(self):
         self.addPinBlend()
         self.addFKChain(self.startJoint,self.endJoint,self.pinBlend)
@@ -101,9 +100,9 @@ class FKIKChain(limbBase.Limb):
 
         #sanity checks on start and endJoint
         if not self.startJoint or not cmds.objExists(self.startJoint):
-            raise RuntimeError("invalid startJoint: %s" % self.startJoint)
+            raise RuntimeError('invalid startJoint: %s' % self.startJoint)
         if not self.endJoint or not cmds.objExists(self.endJoint):
-            raise RuntimeError("invalid endJoint: %s" % self.endJoint)
+            raise RuntimeError('invalid endJoint: %s' % self.endJoint)
 
     def build(self):
         self.addPinBlend()

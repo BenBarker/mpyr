@@ -3,13 +3,11 @@ import os
 import maya.cmds as cmds
 import mpyr.rig.rigbase as mpRigBase
 import mpyr.rig.limb.generic as limbGen
-
-reload(mpRigBase)
-reload(limbGen)
+import mpyr.rig.limb.leg as legs
 
 import logging
 rigLog = logging.getLogger('rig')
-rigLog.setLevel(logging.DEBUG)
+rigLog.setLevel(logging.INFO)
 
 class CharacterRig(mpRigBase.AnimRig):
     def __init__(self):
@@ -37,11 +35,12 @@ class CharacterRig(mpRigBase.AnimRig):
         spine.startJoint='Spine_01'
         spine.endJoint='Spine_04'
         
-        legL = limbGen.FKIKChain()
+        legL = legs.LegFKIK()
         legL.name.part = 'Leg'
         legL.name.loc = 'L'
         legL.startJoint = 'Leg_L_01'
-        legL.endJoint = 'Foot_L_01'
+        legL.endJoint = 'Foot_L_03'
+        legL.heel = 'Foot_L_heel'
         legR = legL.mirror()
 
         armL = limbGen.FKIKChain()

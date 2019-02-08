@@ -24,7 +24,6 @@ import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.attr as mpAttr
 import mpyr.lib.name as mpName
 import mpyr.lib.rig as mpRig
-
 import mpyr.rig.limb.generic as limbGen
 
 rigLog = logging.getLogger('rig')
@@ -63,18 +62,18 @@ class Rig(object):
         #These properties are filled in as the rig builds
         self.rigNode = None     #the top transform for the rig, all things parented under this
         self.rigName = None     #the name of the rig. Default set in setRigNameDefault
-        self.rootJoint = ""       #the root joint of the skeleton
+        self.rootJoint = ''       #the root joint of the skeleton
 
         #Attrs set before build, used to import files/weights/etc. Can be set automatically based
         #on pipeline standards or a database.
-        self.geoPath = ""
-        self.weightPath = ""
-        self.skeletonPath = ""
+        self.geoPath = ''
+        self.weightPath = ''
+        self.skeletonPath = ''
         
-        self.rigVersion = ""    #bookkeeping for pipeline, stored as an attr on the rigNode. Set if
+        self.rigVersion = ''    #bookkeeping for pipeline, stored as an attr on the rigNode. Set if
         
     def __repr__(self):
-        return "%s %s" % (self.__class__.__name__, self.rigName)
+        return '%s %s' % (self.__class__.__name__, self.rigName)
 
     def create(self):
         '''Builds the rig by calling the creation methods in the correct 
@@ -98,38 +97,38 @@ class Rig(object):
         self.addMasterSet()
         
         #Make some top level nodes
-        self.limbNode = cmds.createNode("transform", n="limbs", p=self.rigNode)
-        self.geoNode = cmds.createNode("transform", n="geo", p=self.rigNode)
-        self.skeletonNode = cmds.createNode("transform", n="skel", p=self.rigNode)
+        self.limbNode = cmds.createNode('transform', n='limbs', p=self.rigNode)
+        self.geoNode = cmds.createNode('transform', n='geo', p=self.rigNode)
+        self.skeletonNode = cmds.createNode('transform', n='skel', p=self.rigNode)
         
         # Setup visibility attrs 
-        plumin  = cmds.createNode("plusMinusAverage", n=self.rigNode+"Vis_plumin")
+        plumin  = cmds.createNode('plusMinusAverage', n=self.rigNode+'Vis_plumin')
         
         #This kind of geo/skeleton/mesh hiding or showing mechanism is optional.
         #Some animators like it, some prefer ctrl+h, some prefer layers, etc.
         #geo
-        geoattr = self.rigNode + ".geoVis"
-        cmds.addAttr(self.rigNode, ln="geoVis", at="enum", en="off:on:template:reference:seg", k=True,dv=1 )
-        cmds.setAttr( self.geoNode+".overrideEnabled", 1 )
-        cmds.connectAttr( geoattr, self.geoNode+".overrideVisibility" )
-        cmds.setAttr( plumin+".operation", 2 )
-        cmds.setAttr( plumin+".input1D[1]", 1 )
-        cmds.connectAttr( geoattr, plumin+".input1D[0]" )
-        cmds.connectAttr( plumin+".output1D", self.geoNode+".overrideDisplayType" )
+        geoattr = self.rigNode+'.geoVis'
+        cmds.addAttr(self.rigNode, ln='geoVis', at='enum', en='off:on:template:reference:seg', k=True,dv=1 )
+        cmds.setAttr( self.geoNode+'.overrideEnabled', 1 )
+        cmds.connectAttr( geoattr, self.geoNode+'.overrideVisibility' )
+        cmds.setAttr( plumin+'.operation', 2 )
+        cmds.setAttr( plumin+'.input1D[1]', 1 )
+        cmds.connectAttr( geoattr, plumin+'.input1D[0]' )
+        cmds.connectAttr( plumin+'.output1D', self.geoNode+'.overrideDisplayType' )
         cmds.setAttr(geoattr, 1 )
 
         # rig
-        rigattr = self.rigNode + ".rigVis"
-        cmds.addAttr(self.rigNode, ln="rigVis", at="long", max=1, min=0, k=True,dv=1)
+        rigattr = self.rigNode+'.rigVis'
+        cmds.addAttr(self.rigNode, ln='rigVis', at='long', max=1, min=0, k=True,dv=1)
         cmds.setAttr(rigattr, 1)
-        cmds.setAttr(self.limbNode+".overrideEnabled", 1)
-        cmds.connectAttr(rigattr, self.limbNode+".overrideVisibility")
+        cmds.setAttr(self.limbNode+'.overrideEnabled', 1)
+        cmds.connectAttr(rigattr, self.limbNode+'.overrideVisibility')
     
         # skel
-        skelattr = self.rigNode + ".skelVis"
-        cmds.addAttr(self.rigNode, ln="skelVis", at="long", max=1, min=0, k=True,dv=1)
-        cmds.setAttr(self.skeletonNode+".overrideEnabled", 1)
-        cmds.connectAttr(skelattr, self.skeletonNode+".overrideVisibility")
+        skelattr = self.rigNode+'.skelVis'
+        cmds.addAttr(self.rigNode, ln='skelVis', at='long', max=1, min=0, k=True,dv=1)
+        cmds.setAttr(self.skeletonNode+'.overrideEnabled', 1)
+        cmds.connectAttr(skelattr, self.skeletonNode+'.overrideVisibility')
 
         #create the world offset
         offset = limbGen.WorldOffset()
@@ -139,25 +138,25 @@ class Rig(object):
         # these can be useful later when debugging scenes, to know
         # where things came from and when.
         cmds.addAttr(self.rigNode,
-            ln="rigVersion", 
-            dt="string", 
+            ln='rigVersion', 
+            dt='string', 
             keyable=False
             )
-        cmds.setAttr(self.rigNode + ".rigVersion", self.rigVersion, type="string")
+        cmds.setAttr(self.rigNode+'.rigVersion', self.rigVersion, type='string')
 
         cmds.addAttr(self.rigNode,
-            ln="buildDate", 
-            dt="string", 
+            ln='buildDate', 
+            dt='string', 
             keyable=False
             )
-        cmds.setAttr(self.rigNode + ".buildDate", cmds.date(), type="string")
+        cmds.setAttr(self.rigNode+'.buildDate', cmds.date(), type='string')
 
         cmds.addAttr(self.rigNode,
-            ln="builtBy", 
-            dt="string", 
+            ln='builtBy', 
+            dt='string', 
             keyable=False
             )
-        cmds.setAttr(self.rigNode + ".builtBy", getpass.getuser(), type="string")
+        cmds.setAttr(self.rigNode+'.builtBy', getpass.getuser(), type='string')
 
     def build(self):
         '''All build actions. This is a virtual method, it should be implemented by 
@@ -196,9 +195,9 @@ class Rig(object):
         This node is named after the rig.rigName attribute.
         '''
         if cmds.objExists(self.rigName):
-            raise RuntimeError("Could not create main rig node. Node of name %s already exists."%self.rigName)
+            raise RuntimeError('Could not create main rig node. Node of name %s already exists.'%self.rigName)
         self.rigNode = cmds.createNode('transform',n=self.rigName)
-        mpAttr.addAttrSwitch(self.rigNode + ".isRig",keyable=False,type='bool',value=1)
+        mpAttr.addAttrSwitch(self.rigNode+'.isRig',keyable=False,type='bool',value=1)
         rigLog.debug('created root node %s'%self.rigNode)
 
         return self.rigNode
@@ -240,7 +239,7 @@ class Rig(object):
         rigLog.info('importing file %s'%fileName)
 
         if not os.path.exists(fileName):
-            raise IOError("File path %s not found, cannot getFile"%fileName)
+            raise IOError('File path %s not found, cannot getFile'%fileName)
         fullPath = fileName
         filePath,fileName = os.path.split(fullPath)
         splitFileName = fileName.split('.')
@@ -285,20 +284,20 @@ class Rig(object):
         elif fpLower.endswith('.mb'):
             return cmds.file(filePath,i=True,rnn=True,type='mayaBinary')
         else:
-            raise IOError("Unknown file type, cannot getFile %s" % filePath)
+            raise IOError('Unknown file type, cannot getFile %s' % filePath)
             
     def lock(self):
         '''Lock and hide nodes that shouldn't be touched'''
         rigLog.info('locking rig')
 
-        cmds.setAttr(self.rigNode + ".rigVersion", lock=True)
-        cmds.setAttr(self.rigNode + ".buildDate", lock=True)
-        cmds.setAttr(self.rigNode + ".builtBy", lock=True)
+        cmds.setAttr(self.rigNode+'.rigVersion', lock=True)
+        cmds.setAttr(self.rigNode+'.buildDate', lock=True)
+        cmds.setAttr(self.rigNode+'.builtBy', lock=True)
 
         for node in (self.limbNode,self.geoNode,self.skeletonNode,self.rigNode):
-            mpAttr.lockAndHide(node,["t","r","s","v"])
+            mpAttr.lockAndHide(node,['t','r','s','v'])
         for limb in self.limbs:
-            mpAttr.lockAndHide(limb.limbNode,["t","r","s","v"])
+            mpAttr.lockAndHide(limb.limbNode,['t','r','s','v'])
 
     def cleanupDanglingLimbs(self):
         '''Clean up pinParents and pinWorlds not constrained after build.
@@ -309,14 +308,14 @@ class Rig(object):
         for limb in self.limbs:
             if limb.pinWorld:
                 #check for cns
-                cnx = cmds.listConnections(limb.pinWorld + ".tx",s=1,d=0)
+                cnx = cmds.listConnections(limb.pinWorld+'.tx',s=1,d=0)
                 if not cnx:
                     #cns to the last ctrl of the first limb (the world offset)
                     rigLog.debug('limb %s not constrained, attaching to world'%limb)
                     cmds.parentConstraint(self.limbs[0].ctrls[-1],limb.pinWorld,mo=True)
             elif limb.pinParent:
                 #check for cns
-                cnx = cmds.listConnections(limb.pinParent + ".tx",s=1,d=0)
+                cnx = cmds.listConnections(limb.pinParent+'.tx',s=1,d=0)
                 if not cnx:
                     #cns to the last ctrl of the first limb (the world offset)
                     rigLog.debug('limb %s not constrained, attaching to world'%limb)
@@ -324,16 +323,16 @@ class Rig(object):
             
     def addMasterSet(self):
         '''Creates the top level object set for the rig'''
-        self.masterSet = cmds.sets(em=True,n=self.rigNode + "_MASTERSET")
+        self.masterSet = cmds.sets(em=True,n=self.rigNode+'_MASTERSET')
         
     def addCacheSet(self):
         '''Creates the object set that can hold objects that should be cached'''
-        self.cacheSet = cmds.sets(em=True,n=self.rigNode + "_CACHESET")
+        self.cacheSet = cmds.sets(em=True,n=self.rigNode+'_CACHESET')
         cmds.sets(self.cacheSet,add=self.masterSet)
         
     def addLoadSet(self):
         '''Creates an object set that holds objects that should receive a cache'''
-        self.loadSet = cmds.sets(em=True,n=self.rigNode + "_LOADSET")
+        self.loadSet = cmds.sets(em=True,n=self.rigNode+'_LOADSET')
         cmds.sets(self.loadSet,add=self.masterSet)
         
     def addLimbSets(self):
@@ -361,18 +360,18 @@ class Rig(object):
                         ikCtrls.append(node)
                     else:
                         ctrls.append(node)
-            limbSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSET)
+            limbSet = cmds.sets(em=True,n=limb.limbNode+'_'+mpName.CTRLSET)
             cmds.sets(limbSet,add=self.masterSet)
             if fkCtrls:
-                fkSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSETFK)                            
+                fkSet = cmds.sets(em=True,n=limb.limbNode+'_'+mpName.CTRLSETFK)                            
                 cmds.sets(fkSet,add=limbSet)
                 cmds.sets(fkCtrls,add=fkSet)
             if ikCtrls:
-                ikSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSETIK)  
+                ikSet = cmds.sets(em=True,n=limb.limbNode+'_'+mpName.CTRLSETIK)  
                 cmds.sets(ikSet,add=limbSet)
                 cmds.sets(ikCtrls,add=ikSet)
             if ctrls:
-                ctrlSet = cmds.sets(em=True,n=limb.limbNode+"_"+mpName.CTRLSET)  
+                ctrlSet = cmds.sets(em=True,n=limb.limbNode+'_'+mpName.CTRLSET)  
                 cmds.sets(ctrlSet,add=limbSet)
                 cmds.sets(ctrls,add=ctrlSet)
                 
@@ -380,7 +379,7 @@ class Rig(object):
     def addLimb(self,limbObj):
         '''build the given limb obj and add it to the rig'''
         limbObj.rig = self
-        rigLog.info("adding limb %s" % limbObj)
+        rigLog.info('adding limb %s' % limbObj)
         limbObj.create()
         self.limbs.append(limbObj)
         
@@ -401,7 +400,7 @@ class AnimRig(Rig):
         Rig.addCacheSet(self)
         
         #add skeleton to cache set
-        joints = cmds.listRelatives(self.skeletonNode,type="joint",ad=True)
+        joints = cmds.listRelatives(self.skeletonNode,type='joint',ad=True)
         if joints:
             for jnt in joints:
                 cmds.sets(jnt,add=self.cacheSet)
@@ -423,7 +422,7 @@ class DeformRig(Rig):
         Rig.addLoadSet(self)
         
         #add skeleton to load set
-        joints = cmds.listRelatives(self.skeletonNode,type="joint",ad=True)
+        joints = cmds.listRelatives(self.skeletonNode,type='joint',ad=True)
         for jnt in joints:
             cmds.sets(jnt,add=self.loadSet)
     
@@ -431,7 +430,7 @@ class DeformRig(Rig):
         Rig.addCacheSet(self)
         
         #add mesh to cache set
-        meshNodes = cmds.listRelatives(self.geoNode,type="transform",ad=True)
+        meshNodes = cmds.listRelatives(self.geoNode,type='transform',ad=True)
         for meshNode in meshNodes:
             cmds.sets(meshNode,add=self.cacheSet)
      

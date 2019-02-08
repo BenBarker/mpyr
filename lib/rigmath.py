@@ -508,6 +508,36 @@ class Transform(object):
             a12,a22,a32,a42,
             a13,a23,a33,a43,
             a14,a24,a34,a44
-            )      
-          
+            )  
+
+    def alignToWorld(self):
+        '''UNTESTED. Applies the smallest rotation that will make transform axes parallel to world axes'''
+        xa = self.xAxis()
+        ya = self.yAxis()
+        za = self.zAxis()
+
+        xa.normalize()
+        ya.normalize()
+        za.normalize()
+
+        wx = Vector(1,0,0)
+        wy = Vector(0,1,0)
+        wz = Vector(0,0,1)
+        xAngle,yAngle,zAngle=(0,0,0)
+
+        for axis in (wx,wy,wz):
+            dot = xa.dot(axis)
+            if abs(dot) > abs(xAngle):
+                xAngle = dot
+            dot = ya.dot(axis)
+            if abs(dot) > abs(yAngle):
+                yAngle = dot
+            dot = za.dot(axis)
+            if abs(dot) > abs(zAngle):
+                zAngle = dot
+
+        xAngle = math.acos(xAngle)
+        yAngle = math.acos(yAngle)
+        zAngle = math.acos(zAngle)
+        self.setFromXYZ(radToDeg(xAngle),radToDeg(yAngle),radToDeg(zAngle))
             

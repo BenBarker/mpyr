@@ -34,12 +34,6 @@ import mpyr.lib.rigmath as mpMath
 import mpyr.lib.joint as mpJoint
 import mpyr.lib.rig as mpRig
 
-reload(mpAttr)
-reload(mpName)
-reload(mpCtrl)
-reload(mpRig)
-reload(mpJoint)
-
 rigLog = logging.getLogger('rig.limb')
 
 class Limb(object):
@@ -50,13 +44,13 @@ class Limb(object):
 
     Attrs:
     - name: the limb's name object. TDs usually set the 'part' and 'loc' in the build
-            script, but they are initialized to "Limb" and "M".
+            script, but they are initialized to 'Limb' and 'M'.
     - startJoint: the first (possibly only) joint driven by the limb. Set by the
                   TD in the rig build script.
     - endJoint: the last joint driven by a limb, which when taken with startJoint
                 may form a chain. May be optional.
     - rig: the rig object this limb is being built under. Set when called 
-           with "addLimb" by a rig object.
+           with 'addLimb' by a rig object.
     - limbNode: the top level transform node of the limb. Set when the limb begins
                 building, and used frequently internally to parent things under the limb.
     - noXform: a group made under the limbNode that has 'inheritsTransform' off. Set
@@ -77,8 +71,8 @@ class Limb(object):
     def __init__(self):
         object.__init__(self)
         self.name = mpName.Name()
-        self.name.part = "Limb"
-        self.name.loc = "M"
+        self.name.part = 'Limb'
+        self.name.loc = 'M'
         
         self.startJoint = None
         self.endJoint = None
@@ -92,7 +86,7 @@ class Limb(object):
         self.pinWorld = None
 
     def __repr__(self):
-        return "%s %s_%s" % (self.__class__.__name__, self.name.part, self.name.loc)
+        return '%s %s_%s' % (self.__class__.__name__, self.name.part, self.name.loc)
         
     def __gt__(self,other):
         '''Override greater than (>) to do pinParent constraining'''
@@ -100,7 +94,7 @@ class Limb(object):
         if self.pinParent and cmds.objExists(self.pinParent):
             cmds.parentConstraint(other,self.pinParent,mo=True)
         else:
-            raise RuntimeError("Cannot constrain, .pinParent not found on limb obj")
+            raise RuntimeError('Cannot constrain, .pinParent not found on limb obj')
             
     def __rshift__(self,other):
         '''Override rshift (>>) to do pinWorld constraining'''
@@ -108,7 +102,7 @@ class Limb(object):
         if cmds.objExists(self.pinWorld):
             cmds.parentConstraint(other,self.pinWorld,mo=True)
         else:
-            raise RuntimeError("Cannot constrain, .pinWorld not found on limb obj")
+            raise RuntimeError('Cannot constrain, .pinWorld not found on limb obj')
             
     def addPinParent(self):
         '''Creates a transform to act as an 'incoming parent' hook for the limb.
@@ -172,30 +166,30 @@ class Limb(object):
         self.getLimbNode()
         
         #create a noXform node
-        self.name.desc="NoXform"
-        self.noXform = cmds.createNode("transform", n=self.name.get(),   p=self.limbNode)
-        cmds.setAttr(self.noXform + ".inheritsTransform", 0)
+        self.name.desc='NoXform'
+        self.noXform = cmds.createNode('transform', n=self.name.get(),   p=self.limbNode)
+        cmds.setAttr(self.noXform+'.inheritsTransform', 0)
         
     def end(self):
         '''Runs at end of limb creation'''
         self.instanceLimbNodeShape()
         
     def build(self):
-        raise NotImplementedError("You must implement a 'build' method in your Limb class")
+        raise NotImplementedError('You must implement a "build" method in your Limb class')
         
-    def addCtrl(self,name,type="FK",shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
+    def addCtrl(self,name,type='FK',shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
         '''Adds a ctrl to this limb.
         A wrapper for lib.addCtrl, but hooks ctrl vis up to limb, and adds name suffix.
 
-        name should be simple, like "01", or "Upper". The limb takes care of the rest.
+        name should be simple, like '01', or 'Upper'. The limb takes care of the rest.
         
         The name convention used here is specified in mpName, which is also used 
         to sort controls after building into sets by rigBase.Rig.addLimbSets().
         '''
-        rigLog.debug("Adding %s control %s"%(type,name))
-        if type == "FK":
+        rigLog.debug('Adding %s control %s'%(type,name))
+        if type == 'FK':
             self.name.desc = name + mpName.FKCTRL
-        elif type == "IK":
+        elif type == 'IK':
             self.name.desc = name + mpName.IKCTRL
         else:
             self.name.desc = name + mpName.CTRL
@@ -220,10 +214,18 @@ class Limb(object):
         self.ctrls.append(control)
 
         #If vis switch exists, connect here
-        if cmds.objExists(self.limbNode + ".controls"):
-            cmds.connectAttr(self.limbNode + ".controls",   zero +".v")
+        if cmds.objExists(self.limbNode+'.controls'):
+            cmds.connectAttr(self.limbNode+'.controls', zero +'.v')
 
         return(zero,control)
+
+    def deleteCtrl(self,ctrl):
+        '''removed a ctrl nodes and info from limb'''
+        rigLog.debug('deleting control %s'%ctrl)
+        zeroNode = cmds.listRelatives(ctrl,p=1)[0]
+        cmds.delete(ctrl)
+        cmds.delete(zeroNode)
+        self.ctrls.remove(ctrl)
         
     def getLimbNode(self):
         '''make or return the top level node for the limb'''
@@ -241,23 +243,25 @@ class Limb(object):
             cmds.parent(self.limbNode,self.rig.limbNode)
             
         # create visibility attrs
-        mpAttr.addAttrSwitch(self.limbNode+".controls", value=1)
+        mpAttr.addAttrSwitch(self.limbNode+'.controls', value=1)
 
     def addAttrLimb(self,*args,**kwargs):
         '''Adds an attribute to an empty shape node parented to the top transform of 
         the limb (the 'limbNode'). This shape node is instanced under all the limb's ctrls
         after building, so these attributes will be available in the channel box no matter
-        what ctrl is selected.
+        what ctrl is selected. If attribute already exists it is simply returned.
         All args just passed to addAttr, except the node name (which is automatic)
         '''
         limbNodeShape = self.getLimbNodeShape()
         #I'd like to return the attr name instead of addAttr's default None,
         #so pull it out of the kwargs and return
         attrName = kwargs.get('ln',kwargs.get('longName',None))
-        rigLog.debug("adding limb attribute %s"%attrName)
+        rigLog.debug('adding limb attribute %s'%attrName)
+        fullName = limbNodeShape+'.'+attrName
+        if cmds.objExists(fullName):
+            return fullName
         cmds.addAttr(limbNodeShape,*args,**kwargs)
-
-        return limbNodeShape + "." + attrName
+        return fullName
 
     def getLimbNodeShape(self):
         '''Returns the empty shape node under the limbNode.'''
@@ -267,7 +271,6 @@ class Limb(object):
         '''Instance the shape under the limbNode under all limb ctrls.
         This gives animators easy access to limb node attrs no matter what ctrl they select.
         '''
-        
         limbShape = self.getLimbNodeShape()
         rigLog.debug('instancing limbNode shape %s under ctrls'%limbShape)
         for ctrl in self.ctrls:
@@ -280,13 +283,13 @@ class Limb(object):
         '''Create chain of FK ctrls on given joints, returns list of created ctrls
         - parent = parent of the first ctrl
         '''
-        rigLog.debug("adding FKChain")
+        rigLog.debug('adding FKChain')
         jointList = mpJoint.getJointList(startJoint,endJoint)
         ctrlParent = parent
         fkCtrls = []
         prevCtrl = None
         for idx,joint in enumerate(jointList):
-            zero,fkCtrl = self.addCtrl('%02d'%idx,type="FK",shape='sphere',parent=ctrlParent,xform=joint)
+            zero,fkCtrl = self.addCtrl('%02d'%idx,type='FK',shape='sphere',parent=ctrlParent,xform=joint)
             #first ctrl should do translation of joint, so chain moves with ctrls
             if idx == 0:
                 cmds.pointConstraint(fkCtrl,joint,mo=True)
@@ -303,12 +306,12 @@ class Limb(object):
     def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
         '''Create a chain of FK ctrls with a blended IKRP solver. Requires three or more joints in chain.
         - localParent = drives translation of FK chain always, rotation when local space is on. IK ignores.
-        - worldParent = drives rotation when "world" space is blended on. Drives IK translate and rotate.
-        Returns two lists: (fkCtrls,ikCtrls)
+        - worldParent = drives rotation when 'world' space is blended on. Drives IK translate and rotate.
+        Returns list of [FkCtrl1,FKCtrl2,...,IKAim,IKEnd]
         '''
         jointList = mpJoint.getJointList(startJoint,endJoint)
         if len(jointList)<3:
-            raise RuntimeError("FKIKChain needs at least three joints")
+            raise RuntimeError('FKIKChain needs at least three joints')
         fkCtrls = self.addFKChain(startJoint,endJoint,localParent)
 
         #constrain fk ctrls to local/world
@@ -316,7 +319,7 @@ class Limb(object):
         cmds.parentConstraint(localParent,firstFKZero,mo=True)
 
         #Create IK Chain
-        rigLog.debug("Adding IK Chain")
+        rigLog.debug('Adding IK Chain')
         self.name.desc = 'iKHandle'
         handle,effector = cmds.ikHandle(n=self.name.get(),solver='ikRPsolver',sj=startJoint,ee=endJoint)
         self.name.desc = 'effector'
@@ -329,13 +332,20 @@ class Limb(object):
         endV = mpMath.Vector(endJoint)
         aimV = mpRig.getAimVector(startJoint,midJoint,endJoint)
 
-        aimZero,aimCtrl = self.addCtrl('aim',type="IK",shape='cross',parent=worldParent,xform=aimV)
-        endZero,endCtrl = self.addCtrl("end",type="IK",shape='cube',parent=worldParent,xform=endV)
-        mpAttr.lockAndHide(endCtrl,'r')
-        cmds.pointConstraint(endCtrl, handle,mo=True)
+        aimZero,aimCtrl = self.addCtrl('aim',type='IK',shape='cross',parent=worldParent,xform=aimV)
+        endZero,endCtrl = self.addCtrl('end',type='IK',shape='cube',parent=worldParent,xform=endV)
+
+        #make an 'end null' to have a buffer between the last ctrl and the handle
+        self.name.desc = 'IKEnd'
+        endNull = cmds.group(em=True,n=self.name.get(),p=self.noXform)
+        cmds.xform(endNull,ws=True,m=cmds.xform(endCtrl,ws=True,q=True,m=True))
+
+        #constrain everything
+        cmds.parentConstraint(endCtrl,endNull,mo=True)
+        cmds.parentConstraint(endNull, handle,mo=True)
         cmds.poleVectorConstraint(aimCtrl,handle)
 
-        #make aim float between end and root of ik system
+        #make the aim float between end and root of ik system
         cmds.parentConstraint(endCtrl,worldParent,aimZero,mo=True,skipRotate=('x','y','z'))
 
         #Construct the blend
@@ -349,7 +359,7 @@ class Limb(object):
         for ctrl in fkCtrls:
             shape = cmds.listRelatives(ctrl,s=True)[0]
             adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
-            revNode = mpAttr.connectWithReverse(adder+".output",shape+'.v',force=True)
+            revNode = mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
         cmds.setAttr(handle+'.v',0)
         mpAttr.lockAndHide(handle,'v')
 
@@ -362,7 +372,8 @@ class Limb(object):
         mpRig.addSnapParent(aimCtrl, fkCtrls[1])
         mpRig.addSnapParent(aimCtrl, fkCtrls[2])
 
-        return(fkCtrls,(aimCtrl,endCtrl))
+        fkCtrls.extend([aimCtrl,endCtrl])
+        return fkCtrls
 
     def mirror(self):
         '''Return a copy of this limb with attributes mirrored.
