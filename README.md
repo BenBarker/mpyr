@@ -5,16 +5,17 @@ Mpyr is a python framework to help scripted rigging in Autodesk Maya.
 It's designed to create rigs that are:
 
 - Animator friendly
- - Easy and fast to mirror,reset,snap etc.
- - Can be customized by the TD quickly based on animator preference.
- - Are consistent and familiar across many different characters/creatures/props.
+   - Easy and fast to mirror,reset,snap etc.
+   - Can be customized by the TD quickly based on animator preference.
+   - Are consistent and familiar across many different characters/creatures/props.
 - TD friendly
- - Highly reusable "limbs" to construct rigs
- - Automatically manages node naming
- - Core code is abstracted into base classes
- - Automatic creation of object sets that allows easier caching/animation tool creation
+   - Highly reusable "limbs" to construct rigs
+   - Automatically manages node naming
+   - Core code is abstracted into base classes
+   - Automatic creation of object sets that allows easier caching/animation tool creation
 - Pipeline friendly
- - Seperate rig for animation and deformation rigs allows automated caching and asset delivery to lighting.
+   - Seperate rig for animation and deformation allows automated caching and asset delivery to lighting.
+   - Easily absorb modeling changes by decoupling the mesh from the animation rig
  
  Mpyr is not an "auto rigger". TD's must write scripts to build rigs, but the framework is designed to make those scripts as short as possible while still being flexible enough to rig any character.
  
