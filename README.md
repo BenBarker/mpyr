@@ -26,7 +26,7 @@ It's designed to create rigs that are:
  - examples: Example rig scripts.
  
  ### Rebuild Always
- The heart of the system is the rig build script. All rigs are scripted in Python and saved as scripts that are run whenever the rig needs to be updated. Rigs in this system rarely (ideally never) need to be opened in Maya, worked on, and then saved. By being rebuilt always from 'scratch' regressions are minimized and scene kruft is eliminated.
+ The heart of the system is the rig build script. All rigs are scripted in Python and saved as scripts that are run whenever the rig needs to be updated. Rigs in this system rarely (ideally never) need to be opened in Maya, worked on, and then saved. By being rebuilt always 'from scratch' regressions are minimized and scene cruft is eliminated.
 
 It starts with the skeleton. The skeleton serves as the base of the character. This is created in the standard way based on the mesh. TDs can create bones however they wish, however standard Maya conventions still apply: mirror behavior, clean joint orients, and good names are  required. Then this skeleton is saved as it's own asset, and used throughout the pipeline.
 
@@ -37,7 +37,7 @@ Mpyr provides two base classes: `RigBase` and `LimbBase` to make rig build scrip
 
 ### Caching
 The rigs are designed to use in a sequence: AnimRigs are created first and delivered to animation. Animators work while TDs begin work on the DeformRig. Animators then publish and the joint SRTs are baked from their scene. These SRTs can then be loaded on the DeformRig either in the animation scene, or in a totally new scene. This separates the animation and deformation steps, allowing parallel development and also keeping animation scenes light. Animators never need to see the full mesh unless they want.
-DeformRigs can also be stacked. Each character can have multiple deform rigs,  handling different parts of the character and using deformers, nucleus, or whatever makes sense for the character.
+DeformRigs can also be stacked. Each character can have multiple deform rigs handling different parts of the character, using deformers, nucleus, or whatever makes sense for the character.
 
 ## Note
 Currently only the animRig is provided. Deformation and caching functions are in development.
