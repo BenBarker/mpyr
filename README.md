@@ -39,5 +39,5 @@ Mpyr provides two base classes: `RigBase` and `LimbBase` to make rig build scrip
 The rigs are designed to use in a sequence: AnimRigs are created first and delivered to animation. Animators work while TDs begin work on the DeformRig. Animators then publish and the joint SRTs are baked from their scene. These SRTs can then be loaded on the DeformRig either in the animation scene, or in a totally new scene. This separates the animation and deformation steps, allowing parallel development and also keeping animation scenes light. Animators never need to see the full mesh unless they want.
 DeformRigs can also be stacked. Each character can have multiple deform rigs,  handling different parts of the character and using deformers, nucleus, or whatever makes sense for the character.
 
-##Examples
-An example biped AnimRig and skeleton is provided in the example folder. Currently only the animRig is provided. Deformation and caching functions are in development.
+## Note
+Currently only the animRig is provided. Deformation and caching functions are in development.
