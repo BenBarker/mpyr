@@ -22,6 +22,7 @@ It's designed to create rigs that are:
  - lib: General purpose Maya helper functions, as well as functions for navigating the finished rigs
  - rig: The base classes that build rigs
  - tools: Tools with UI meant to run in Maya, for animators/tds.
+ - examples: Example rig scripts.
  
  ### Rebuild Always
  The heart of the system is the rig build script. All rigs are scripted in Python and saved as scripts that are run whenever the rig needs to be updated. Rigs in this system rarely (ideally never) need to be opened in Maya, worked on, and then saved. By being rebuilt from 'scratch' always regressions are minimized and scene kruft is eliminated.
@@ -38,4 +39,4 @@ The rigs are designed to use in a sequence: AnimRigs are created first and deliv
 DeformRigs can also be stacked. Each character can have multiple deform rigs,  handling different parts of the character and using deformers, nucleus, or whatever makes sense for the character.
 
 ##Examples
-An example biped AnimRig and skeleton is provided in the rigs/example folder. Currently only the animRig is provided. Deformation and caching functions are in development.
+An example biped AnimRig and skeleton is provided in the example folder. Currently only the animRig is provided. Deformation and caching functions are in development.
