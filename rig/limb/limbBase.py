@@ -305,6 +305,8 @@ class Limb(object):
 
     def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
         '''Create a chain of FK ctrls with a blended IKRP solver. Requires three or more joints in chain.
+        Also creates a "stub" joint with an SC solver at the end of the chain, so that the last joint's
+        rotation is blended between the IK end ctrl and the last FK ctrl properly.
         - localParent = drives translation of FK chain always, rotation when local space is on. IK ignores.
         - worldParent = drives rotation when 'world' space is blended on. Drives IK translate and rotate.
         Returns list of [FkCtrl1,FKCtrl2,...,IKAim,IKEnd]
@@ -329,6 +331,7 @@ class Limb(object):
         #-find the location of the aim
         midJointIdx = int(len(jointList)/2)
         midJoint = jointList[midJointIdx]
+        midV = mpMath.Vector(midJoint)
         endV = mpMath.Vector(endJoint)
         aimV = mpRig.getAimVector(startJoint,midJoint,endJoint)
 
@@ -339,6 +342,21 @@ class Limb(object):
         self.name.desc = 'IKEnd'
         endNull = cmds.group(em=True,n=self.name.get(),p=self.noXform)
         cmds.xform(endNull,ws=True,m=cmds.xform(endCtrl,ws=True,q=True,m=True))
+
+        #make a stub joint and SCIKsolver so the last ctrl will rotate the last joint
+        #in IK mode
+        self.name.desc='ikStub'
+        cmds.select(cl=True)
+        stubJoint = cmds.joint(n=self.name.get())
+        cmds.parent(stubJoint,endJoint)
+        stubPos = endV+((endV-midV)*0.5)
+        cmds.xform(stubJoint,t=stubPos.get(),ws=True)
+        self.name.desc = 'iKStubHandle'
+        stubHandle,stubEffector = cmds.ikHandle(n=self.name.get(),solver='ikSCsolver',sj=endJoint,ee=stubJoint)
+        self.name.desc = 'stubEffector'
+        stubEffector = cmds.rename(stubEffector,self.name.get())
+        cmds.parent(stubHandle,self.noXform)
+        cmds.parentConstraint(endNull,stubHandle,mo=True)
 
         #constrain everything
         cmds.parentConstraint(endCtrl,endNull,mo=True)
@@ -351,6 +369,7 @@ class Limb(object):
         #Construct the blend
         FKIKblender = self.addAttrLimb(ln=mpName.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
         cmds.connectAttr(FKIKblender, handle+'.ikBlend')
+        cmds.connectAttr(FKIKblender, stubHandle+'.ikBlend')
 
         #switch ctrl vis
         for ctrl in (aimCtrl,endCtrl):
@@ -360,9 +379,7 @@ class Limb(object):
             shape = cmds.listRelatives(ctrl,s=True)[0]
             adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
             revNode = mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
-        cmds.setAttr(handle+'.v',0)
-        mpAttr.lockAndHide(handle,'v')
-
+        
         mpRig.addPickParent(aimCtrl,endCtrl)
         mpRig.addPickParent(endCtrl,aimCtrl)
 
@@ -371,6 +388,11 @@ class Limb(object):
         mpRig.addSnapParent(aimCtrl, fkCtrls[0])
         mpRig.addSnapParent(aimCtrl, fkCtrls[1])
         mpRig.addSnapParent(aimCtrl, fkCtrls[2])
+
+        #cleanup
+        for hideObject in (handle,stubHandle,stubJoint):
+            cmds.setAttr(hideObject+'.v',0)
+            mpAttr.lockAndHide(hideObject,'v')
 
         fkCtrls.extend([aimCtrl,endCtrl])
         return fkCtrls
