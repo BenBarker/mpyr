@@ -29,6 +29,7 @@ CTRLSET = 'CTRLS'
 CTRLSETFK = 'CTRLSFK'
 CTRLSETIK = 'CTRLSIK'
 FKIKBLENDATTR = 'FKIK'              #any attr that blends IK/FK 
+CACHEATTR = 'mpCache'                 #attr name used to flag objects for caching
 
 def getLocation(node):
     '''given a node, return the location string. Return None if not found'''

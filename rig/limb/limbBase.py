@@ -33,6 +33,7 @@ import mpyr.lib.cns as  mpCns
 import mpyr.lib.rigmath as mpMath
 import mpyr.lib.joint as mpJoint
 import mpyr.lib.rig as mpRig
+import mpyr.lib.cache as mpCache
 
 rigLog = logging.getLogger('rig.limb')
 
@@ -357,6 +358,7 @@ class Limb(object):
         stubEffector = cmds.rename(stubEffector,self.name.get())
         cmds.parent(stubHandle,self.noXform)
         cmds.parentConstraint(endNull,stubHandle,mo=True)
+        mpCache.flag(stubJoint,False) #don't want stub joints saved in jointSRTs
 
         #constrain everything
         cmds.parentConstraint(endCtrl,endNull,mo=True)

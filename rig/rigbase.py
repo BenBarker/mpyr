@@ -24,6 +24,7 @@ import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.attr as mpAttr
 import mpyr.lib.name as mpName
 import mpyr.lib.rig as mpRig
+import mpyr.lib.cache as mpCache
 import mpyr.rig.limb.generic as limbGen
 
 rigLog = logging.getLogger('rig')
@@ -158,6 +159,7 @@ class Rig(object):
             )
         cmds.setAttr(self.rigNode+'.builtBy', getpass.getuser(), type='string')
 
+
     def build(self):
         '''All build actions. This is a virtual method, it should be implemented by 
         rig build classes that inherit from this object'''
@@ -165,9 +167,11 @@ class Rig(object):
         
     def end(self):
         '''Post build actions'''
-        #Add object sets used for animation tools and caching
+        #Add object sets for caching
         self.addCacheSet()
         self.addLoadSet()
+
+        #Add object sets used for animation tools
         self.addLimbSets()
 
         #lock and cleanup
@@ -403,7 +407,12 @@ class AnimRig(Rig):
         joints = cmds.listRelatives(self.skeletonNode,type='joint',ad=True)
         if joints:
             for jnt in joints:
+                #if joint explicitly flagged not to cache then skip it
+                if mpCache.isFlagged(jnt) and not mpCache.getFlag(jnt):
+                    continue
+                rigLog.debug('flagging %s to cache'%jnt)
                 cmds.sets(jnt,add=self.cacheSet)
+                mpCache.flag(jnt,True)
 
     
 class DeformRig(Rig):
@@ -432,6 +441,10 @@ class DeformRig(Rig):
         #add mesh to cache set
         meshNodes = cmds.listRelatives(self.geoNode,type='transform',ad=True)
         for meshNode in meshNodes:
+            #if mesh explicitly flagged not to cache then skip it
+            if mpCache.isFlagged(meshNode) and not mpCache.getFlag(meshNode):
+                continue
+            rigLog.debug('flagging %s to cache'%meshNode)
             cmds.sets(meshNode,add=self.cacheSet)
-     
+            mpCache.flag(meshNode,True)
     
