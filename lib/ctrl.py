@@ -103,6 +103,7 @@ def getCurve(shape,size=1.0,segments=13):
     shapeFactory = {
         'sphere':makeSphere,
         'cube':makeCube,
+        'box':makeCube,
         'circle':makeCircle,
         'cross':makeCross,
         'square':makeSquare,
