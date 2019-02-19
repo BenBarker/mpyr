@@ -2,6 +2,7 @@
 
 import maya.cmds as cmds
 import mpyr.lib.rigmath as mpMath
+import mpyr.lib.rig as mpRig
 import limbBase
 
 reload(limbBase)
@@ -107,4 +108,28 @@ class FKIKChain(limbBase.Limb):
     def build(self):
         self.addPinBlend()
         self.addFKIKChain(self.startJoint,self.endJoint,self.pinBlend,self.pinWorld)
+
+class FKTree(limbBase.Limb):
+    '''Recursively rigs a joint chain with FK offsets. Requires a parent joint, rigs parent and all children.'''
+    def begin(self):
+        limbBase.Limb.begin(self)
+        if not self.startJoint or not cmds.objExists(self.startJoint):
+            raise RuntimeError('invalid startJoint: %s' % self.startJoint)
+    def build(self):
+        self.addPinBlend()
+        self.makeCtrl(self.startJoint,self.pinBlend)
+
+    def makeCtrl(self,startJoint,parent):
+        '''recursive function to build ctrls'''
+        ctrlXform = mpMath.Transform()
+        ctrlXform.scale(0.3,0.3,0.3)
+        zero,c1 = self.addCtrl('%02d'%len(self.ctrls),type='FK',shape='box',parent=parent,xform=startJoint,shapeXform=ctrlXform)
+        cmds.parentConstraint(c1,startJoint,mo=True)
+        children = cmds.listRelatives(startJoint,type='joint') or []
+        for child in children:
+            childZero,childCtrl = self.makeCtrl(child,c1)
+            mpRig.addPickParent(childCtrl,c1)
+        return (zero,c1)
+
+
 

@@ -50,6 +50,12 @@ class CharacterRig(mpRigBase.AnimRig):
         armL.endJoint = 'Arm_L_03'
         armR = armL.mirror()
 
+        handL = limbGen.FKTree()
+        handL.name.part='Hand'
+        handL.name.loc='L'
+        handL.startJoint='Hand_L_01'
+        handR = handL.mirror()
+
 
         self.addLimb(pelvis)
         self.addLimb(spine)
@@ -57,6 +63,8 @@ class CharacterRig(mpRigBase.AnimRig):
         self.addLimb(legR)
         self.addLimb(armL)
         self.addLimb(armR)
+        self.addLimb(handL)
+        self.addLimb(handR)
 
         #Wire Limbs
         spine > 'Root'
@@ -64,3 +72,5 @@ class CharacterRig(mpRigBase.AnimRig):
         legR > 'Root'
         armL > 'Clav_L_02'
         armR > 'Clav_R_02'
+        handL > 'Arm_L_03'
+        handR > 'Arm_R_03'
