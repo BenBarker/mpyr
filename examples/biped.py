@@ -2,8 +2,10 @@
 import os
 import maya.cmds as cmds
 import mpyr.rig.rigbase as mpRigBase
-import mpyr.rig.limb.generic as limbGen
+import mpyr.rig.limb.generic as generic
+reload(generic)
 import mpyr.rig.limb.leg as legs
+import mpyr.rig.limb.spine as spines
 
 import logging
 rigLog = logging.getLogger('rig')
@@ -26,13 +28,9 @@ class CharacterRig(mpRigBase.AnimRig):
         self.importGeo()
 
         #Create Limbs
-        pelvis = limbGen.FKOffset()
-        pelvis.name.part='Main'
-        pelvis.startJoint='Root'
-
-        spine = limbGen.FKChain()
+        spine = generic.NurbsStrip()
         spine.name.part='Spine'
-        spine.startJoint='Spine_01'
+        spine.startJoint='Root'
         spine.endJoint='Spine_04'
         
         legL = legs.LegFKIK()
@@ -43,21 +41,19 @@ class CharacterRig(mpRigBase.AnimRig):
         legL.heel = 'Foot_L_heel'
         legR = legL.mirror()
 
-        armL = limbGen.FKIKChain()
+        armL = generic.FKIKChain()
         armL.name.part = 'Arm'
         armL.name.loc = 'L'
         armL.startJoint = 'Arm_L_01'
         armL.endJoint = 'Arm_L_03'
         armR = armL.mirror()
 
-        handL = limbGen.FKTree()
+        handL = generic.FKTree()
         handL.name.part='Hand'
         handL.name.loc='L'
         handL.startJoint='Hand_L_01'
         handR = handL.mirror()
 
-
-        self.addLimb(pelvis)
         self.addLimb(spine)
         self.addLimb(legL)
         self.addLimb(legR)
@@ -67,7 +63,6 @@ class CharacterRig(mpRigBase.AnimRig):
         self.addLimb(handR)
 
         #Wire Limbs
-        spine > 'Root'
         legL > 'Root'
         legR > 'Root'
         armL > 'Clav_L_02'

@@ -174,6 +174,7 @@ class Limb(object):
     def end(self):
         '''Runs at end of limb creation'''
         self.instanceLimbNodeShape()
+        mpAttr.visOveride(self.noXform,0)
         
     def build(self):
         raise NotImplementedError('You must implement a "build" method in your Limb class')

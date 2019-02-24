@@ -1,5 +1,6 @@
 '''helpers for getting/setting/making/locking attributes on maya nodes'''
 import maya.cmds as cmds
+import maya.mel as mel
 
 def visOveride(obj,value):
     '''hides node using vis override, so unhide all won't unhide'''
@@ -78,6 +79,21 @@ def unlockAndShow(obj, attrs):
             cmds.setAttr(obj+'.sx', k=True, l=False )
             cmds.setAttr(obj+'.sy', k=True, l=False )
             cmds.setAttr(obj+'.sz', k=True, l=False )
+
+def breakConnections(obj,attrs):
+    '''given an object and a list of attrs, break all incoming connections'''
+    for attr in attrs:
+        unlockAndShow(obj,[attr])
+        fullName='%s.%s'%(obj,attr)
+        dest=cmds.connectionInfo(fullName,getExactDestination=True)
+        if dest:
+            src=cmds.connectionInfo(dest,sourceFromDestination=True)
+            if src:
+                cmds.disconnectAttr(src,dest)
+        #if translate, rotate, or scale, do sub attributes as well
+        if (attr in 'srt'):
+            breakConnections(obj,[attr+'x',attr+'y',attr+'z'])
+
 
 def connectWithReverse(src,targ,force=False):
     '''Given a source 'obj.attr' and a target 'obj.attr', connect with a reverse between.
