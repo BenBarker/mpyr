@@ -10,18 +10,16 @@ uses the world matrix, or by default just an identity matrix.
 Vectors and Transforms can be multiplied/added/subtracted with each other, where it 
 makes sense.
 '''
-
 import maya.cmds as cmds
 import math
 
-
 def degToRad(deg):
     '''convert degree to radians'''
-    return math.pi * deg / 180.0
+    return math.pi*deg/180.0
 
 def radToDeg(rad):
     '''convert radians to degrees'''
-    return 180.0 * rad / math.pi
+    return 180.0*rad/math.pi
     
 class Vector(object):
     '''3d vector helper class. 
@@ -49,7 +47,7 @@ class Vector(object):
         If three float args, set to xyz. If a maya object use the world translate
         of that object.
         '''
-        if len(args) == 1:
+        if len(args)==1:
             if hasattr(args[0], 'x') and hasattr(args[0],'y') and hasattr(args[0],'z'):
                 self.setFromVector(args[0])
             elif hasattr(args[0], '_matrix'):
@@ -62,7 +60,7 @@ class Vector(object):
                 self.setFromScalar(args[0])
             else:
                 raise RuntimeError("Could not create vector from args: %s" % args)
-        elif len(args) == 3:
+        elif len(args)==3:
             self.setFromList(args)
             
     def copy(self):
@@ -70,21 +68,21 @@ class Vector(object):
         return Vector(self.x,self.y,self.z)
         
     def setFromScalar(self,scalar):
-        self.x = float(scalar)
-        self.y = float(scalar)
-        self.z = float(scalar)
+        self.x=float(scalar)
+        self.y=float(scalar)
+        self.z=float(scalar)
         
     def setFromList(self,other):
         '''set from a list'''
-        self.x = float(other[0])
-        self.y = float(other[1])
-        self.z = float(other[2])
+        self.x=float(other[0])
+        self.y=float(other[1])
+        self.z=float(other[2])
         
     def setFromVector(self,other):
         '''set this vector from another vector'''
-        self.x = other.x
-        self.y = other.y
-        self.z = other.z
+        self.x=other.x
+        self.y=other.y
+        self.z=other.z
         
     def setFromObj(self,obj):
         '''set vector to a maya object's world space transform'''
@@ -105,7 +103,7 @@ class Vector(object):
         return newV
     
     def __mul__(self,other):
-        newV = Vector()
+        newV=Vector()
         if isinstance(other,Vector):
             newV.setFromVector(self.x * other.x, self.y * other.y, self.z * other.z)
         elif isinstance(other,Transform):
@@ -137,10 +135,10 @@ class Vector(object):
         return self.sqLength() < other
         
     def normalize(self):
-        thisLength = self.length()
-        self.x /= thisLength
-        self.y /= thisLength
-        self.z /= thisLength
+        thisLength=self.length()
+        self.x/=thisLength
+        self.y/=thisLength
+        self.z/=thisLength
         
     def length(self):
         '''return vector length'''
@@ -154,14 +152,12 @@ class Vector(object):
         '''return dot product of this vector and another'''
         return self.x*other.x+self.y*other.y+self.z*other.z
         
-        
     def cross(self,other):
         '''return cross product of this vector and another as a Vector'''
-        return Vector(
-            self.y * other.z - self.z * other.y , 
-            self.z * other.x - self.x * other.z , 
-            self.x * other.y - self.y * other.x
-            )
+        return Vector(self.y*other.z-self.z*other.y , 
+            self.z*other.x-self.x*other.z , 
+            self.x*other.y-self.y*other.x)
+    
     def invert(self):
         '''invert the current vector in place'''
         self.x *= -1
@@ -173,14 +169,11 @@ class Vector(object):
         yz plane is used (-1,0,0)'''
         thisV = self.copy()
         if not plane:
-            plane = Vector(-1,0,0)
+            plane=Vector(-1,0,0)
         else:
-            plane = Vector(plane)
-        dot = thisV.dot(plane)
-        #if dot < 0:
-        #    dot *= -1
-        self.setFromVector(thisV - plane * 2 * dot)
-        
+            plane=Vector(plane)
+        dot=thisV.dot(plane)
+        self.setFromVector(thisV-plane*2*dot)
         
 class Transform(object):
     '''4x4 object transform class'''
@@ -243,13 +236,13 @@ class Transform(object):
         return 16
             
     def setFromObj(self,obj):
-        self._matrix = cmds.xform(obj,ws=True,m=True,q=True)
+        self._matrix=cmds.xform(obj,ws=True,m=True,q=True)
         
     def setFromList(self,other):
         '''set matrix from a 16 element list'''
-        if not len(other) == 16:
+        if not len(other)==16:
             raise TypeError("matrix must be set from 16 element list")
-        self._matrix = list(other[:])
+        self._matrix=list(other[:])
         
     def xAxis(self):
         '''return the xAxis of the Transform as a Vector'''
@@ -270,43 +263,42 @@ class Transform(object):
     def setTranslation(self,other):
         '''set translation from another object'''
         other = Vector(other)
-        self._matrix[12] = other.x
-        self._matrix[13] = other.y
-        self._matrix[14] = other.z
+        self._matrix[12]=other.x
+        self._matrix[13]=other.y
+        self._matrix[14]=other.z
         
     def translate(self,*args):
         '''move the translation based on the translation of another object, Vector or 
         Transform'''
         other = Vector(*args)
-        self._matrix[12] += other.x
-        self._matrix[13] += other.y
-        self._matrix[14] += other.z
+        self._matrix[12]+=other.x
+        self._matrix[13]+=other.y
+        self._matrix[14]+=other.z
         
     def scale(self, *args):
         '''scale the transform by the given amount, or by the given xyz if three args given'''
         other = Vector(*args)
-        self._matrix[0] *= other.x
-        self._matrix[5] *= other.y
-        self._matrix[10] *= other.z
+        self._matrix[0]*=other.x
+        self._matrix[5]*=other.y
+        self._matrix[10]*=other.z
         
     def __add__(self,other):
         '''add this matrix to another, or to a vector (to translate)'''
         try:
-            if len(other) == 3: #matrix and vector
+            if len(other)==3: #matrix and vector
                 self.translate(other)
-            elif len(other) == 16: #matrix and matrix
+            elif len(other)==16: #matrix and matrix
                 return Transform(map((lambda x,y: x+y),self.get(),other.get()))
         #matrix and float
         except TypeError:
             return Transform(map((lambda x,y: x+y),self.get(),[float(other)]*16))
         
-        
     def __sub__(self,other):
         '''subtract this matrix from another, or subtract a vector (from translate)'''
         try:
-            if len(other) == 3: #matrix and vector
-                self.translate(other * -1)
-            elif len(other) == 16: #matrix and matrix
+            if len(other)==3: #matrix and vector
+                self.translate(other*-1)
+            elif len(other)==16: #matrix and matrix
                 return Transform(map((lambda x,y: x-y),self.get(),other.get()))
         except TypeError: # matrix and float
             return Transform(map((lambda x,y: x-y),self.get(),[float(other)]*16))     
@@ -316,58 +308,43 @@ class Transform(object):
         if isinstance(other,Transform):
             a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
             b11,b12,b13,b14,b21,b22,b23,b24,b31,b32,b33,b34,b41,b42,b43,b44 = other.get()
-
-            m11 = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
-            m12 = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
-            m13 = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
-            m14 = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
-
-            m21 = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
-            m22 = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
-            m23 = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
-            m24 = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
-
-            m31 = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
-            m32 = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
-            m33 = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
-            m34 = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
-
-            m41 = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
-            m42 = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
-            m43 = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
-            m44 = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
-
-            return Transform(
-            m11,m12,m13,m14,
-            m21,m22,m23,m24,
-            m31,m32,m33,m34,
-            m41,m42,m43,m44
-            )
+            m11=a11*b11 + a12*b21 + a13*b31 + a14*b41
+            m12=a11*b12 + a12*b22 + a13*b32 + a14*b42
+            m13=a11*b13 + a12*b23 + a13*b33 + a14*b43
+            m14=a11*b14 + a12*b24 + a13*b34 + a14*b44
+            m21=a21*b11 + a22*b21 + a23*b31 + a24*b41
+            m22=a21*b12 + a22*b22 + a23*b32 + a24*b42
+            m23=a21*b13 + a22*b23 + a23*b33 + a24*b43
+            m24=a21*b14 + a22*b24 + a23*b34 + a24*b44
+            m31=a31*b11 + a32*b21 + a33*b31 + a34*b41
+            m32=a31*b12 + a32*b22 + a33*b32 + a34*b42
+            m33=a31*b13 + a32*b23 + a33*b33 + a34*b43
+            m34=a31*b14 + a32*b24 + a33*b34 + a34*b44
+            m41=a41*b11 + a42*b21 + a43*b31 + a44*b41
+            m42=a41*b12 + a42*b22 + a43*b32 + a44*b42
+            m43=a41*b13 + a42*b23 + a43*b33 + a44*b43
+            m44=a41*b14 + a42*b24 + a43*b34 + a44*b44
+            return Transform(m11,m12,m13,m14,m21,m22,m23,m24,m31,m32,m33,m34,m41,m42,m43,m44)
         elif isinstance(other,Vector):
             a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
             b1,b2,b3 = other.get()
-            return Transform(
-                a11 * b1, a12 * b2, a13 * b3, a14,
-                a21 * b1, a22 * b2, a23 * b3, a24,
-                a31 * b1, a32 * b2, a33 * b3, a34,
-                a41, a42, a43, a44
-                )
+            return Transform(a11*b1,a12*b2,a13*b3,a14,a21*b1,a22*b2,a23*b3,a24,
+                a31*b1,a32*b2,a33*b3,a34,a41,a42,a43,a44)
         else:
-            raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" % (self.__class__.__name__ ,other.__class__.__name__))
+            raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" %(self.__class__.__name__ ,other.__class__.__name__))
             
     def reflect(self,plane=None):
         '''reflect the transform about a plane specified as a Vector. If none given the yz
         plane is used.'''
-        xa = self.xAxis()
+        xa=self.xAxis()
         xa.reflect(plane=plane)
-        ya = self.yAxis()
+        ya=self.yAxis()
         ya.reflect(plane=plane)
-        za = self.zAxis()
+        za=self.zAxis()
         za.reflect(plane=plane)
-        ta = self.getTranslation()
+        ta=self.getTranslation()
         ta.reflect(plane=plane)
         self.set(xa.x,xa.y,xa.z,0,ya.x,ya.y,ya.z,0,za.x,za.y,za.z,0,ta.x,ta.y,ta.z,1)
-        
         
     def det(self):
         '''return the determinate of the matrix'''
@@ -386,13 +363,8 @@ class Transform(object):
     def transpose(self):
         '''transpose the current matrix in place'''
         a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
-        self.set(
-            a11,a21,a31,a41,
-            a12,a22,a32,a42,
-            a13,a23,a33,a43,
-            a14,a24,a34,a44
-            )
-
+        self.set(a11,a21,a31,a41,a12,a22,a32,a42,a13,a23,a33,a43,a14,a24,a34,a44)
+        
     def invert(self):
         '''invert the current matrix in place.'''
         inv = [0]*16
@@ -436,46 +408,38 @@ class Transform(object):
         det = 1.0 / det
         self._matrix=[x * det for x in inv]
         
-        
     def setFromAxisAngle(self,axis,angle):
         '''given an axis Vector and angle in radians, set matrix to rotation'''
         axisVector = Vector(axis)
         axisVector.normalize()
-        x,y,z = axisVector.x,axisVector.y,axisVector.z
-        sa = math.sin(-angle)
-        ca = math.cos(-angle)
-        xx = x*x
-        yy = y*y
-        zz = z*z
-        xy = x*y
-        xz = x*z
-        yz = y*z
-        
+        x,y,z=axisVector.x,axisVector.y,axisVector.z
+        sa=math.sin(-angle)
+        ca=math.cos(-angle)
+        xx=x*x
+        yy=y*y
+        zz=z*z
+        xy=x*y
+        xz=x*z
+        yz=y*z
         a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
         
-        a11 = xx + ca * (1.0 - xx)
-        a12 = xy - ca * xy + sa * z
-        a13 = xz - ca * xz - sa * y
-        a14 = 0.0
-        a21 = xy - ca * xy - sa * z
-        a22 = yy + ca * (1.0 - yy)
-        a23 = yz - ca * yz + sa * x
-        a24 = 0.0
-        a31 = xz - ca * xz + sa * y
-        a32 = yz - ca * yz - sa * x
-        a33 = zz + ca * (1.0 - zz)
-        a34 = 0.0
-        a41 = 0.0
-        a42 = 0.0
-        a43 = 0.0
-        a44 = 1.0 
-        
-        self.set(
-            a11,a21,a31,a41,
-            a12,a22,a32,a42,
-            a13,a23,a33,a43,
-            a14,a24,a34,a44
-            )         
+        a11=xx+ca*(1.0-xx)
+        a12=xy-ca*xy+sa*z
+        a13=xz-ca*xz-sa*y
+        a14=0.0
+        a21=xy-ca*xy-sa*z
+        a22=yy+ca*(1.0-yy)
+        a23=yz-ca*yz+sa*x
+        a24=0.0
+        a31=xz-ca*xz+sa*y
+        a32=yz-ca*yz-sa*x
+        a33=zz+ca*(1.0-zz)
+        a34=0.0
+        a41=0.0
+        a42=0.0
+        a43=0.0
+        a44=1.0      
+        self.set(a11,a21,a31,a41,a12,a22,a32,a42,a13,a23,a33,a43,a14,a24,a34,a44)         
 
     def setFromXYZ(self,x,y,z):
         '''set the rotation by the given XYZ angles in degrees,
@@ -484,45 +448,38 @@ class Transform(object):
         x=degToRad(-x)
         y=degToRad(-y)
         z=degToRad(-z)
-        cx = math.cos(x)
-        cy = math.cos(y)
-        cz = math.cos(z)
-        sx = math.sin(x)
-        sy = math.sin(y)
-        sz = math.sin(z)
-        
+        cx=math.cos(x)
+        cy=math.cos(y)
+        cz=math.cos(z)
+        sx=math.sin(x)
+        sy=math.sin(y)
+        sz=math.sin(z)
         a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
 
-        a11	=	cz*cy
-        a12	=	sz*cx + cz*sy*sx
-        a13	=	sz*sx - cz*sy*cx	
-        a21	=	-sz*cy
-        a22	=	cz*cx - sz*sy*sx	
-        a23	=	cz*sx + sz*sy*cx 
-        a31 =	sy	
-        a32	=	-cy*sx
-        a33	=	cy*cx 
-        
-        self.set(
-            a11,a21,a31,a41,
-            a12,a22,a32,a42,
-            a13,a23,a33,a43,
-            a14,a24,a34,a44
-            )  
+        a11=cz*cy
+        a12=sz*cx + cz*sy*sx
+        a13=sz*sx - cz*sy*cx	
+        a21=-sz*cy
+        a22=cz*cx - sz*sy*sx	
+        a23=cz*sx + sz*sy*cx 
+        a31=sy	
+        a32=-cy*sx
+        a33=cy*cx  
+        self.set(a11,a21,a31,a41,a12,a22,a32,a42,a13,a23,a33,a43,a14,a24,a34,a44)  
 
     def alignToWorld(self):
         '''UNTESTED. Applies the smallest rotation that will make transform axes parallel to world axes'''
-        xa = self.xAxis()
-        ya = self.yAxis()
-        za = self.zAxis()
+        xa=self.xAxis()
+        ya=self.yAxis()
+        za=self.zAxis()
 
         xa.normalize()
         ya.normalize()
         za.normalize()
 
-        wx = Vector(1,0,0)
-        wy = Vector(0,1,0)
-        wz = Vector(0,0,1)
+        wx=Vector(1,0,0)
+        wy=Vector(0,1,0)
+        wz=Vector(0,0,1)
         xAngle,yAngle,zAngle=(0,0,0)
 
         for axis in (wx,wy,wz):
