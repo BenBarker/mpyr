@@ -36,6 +36,7 @@ class SpineFK(limbBase.Limb):
         cmds.orientConstraint(fkCtrl,jointList[0],mo=True) #every joint driven by ori cns
         mpAttr.lockAndHide(fkCtrl,'t') 
         mpRig.addPickParent(spineCtrls[0],fkCtrl)
+        mpAttr.unlockAndShow(spineCtrls[0],'t')
 
         #point constrain next control so spine stays locked when hips move
         cmds.pointConstraint(spineCtrls[1],jointList[1],mo=True)
