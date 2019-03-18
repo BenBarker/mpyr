@@ -157,6 +157,7 @@ class NurbsStrip(limbBase.Limb):
             raise RuntimeError('invalid endJoint: %s' % self.endJoint)
 
     def build(self):
+        self.addPinParent()
         self.addAttrLimb(ln='noStretch', at='float',min=0,max=1,dv=0,k=True,s=1)
         self.addAttrLimb(ln='slideAlong', at='float',min=-1,max=1,dv=0,k=True,s=1)
         jointList = mpJoint.getJointList(self.startJoint,self.endJoint)
@@ -231,11 +232,12 @@ class NurbsStrip(limbBase.Limb):
         stripJoints = []
         stripJointParent = cmds.createNode('transform',n=crv + "_stripJoints",p=self.noXform)
         ctrlParent = cmds.createNode('transform',n=crv+"_Ctrls",p=self.pinParent)
+        cmds.xform(ctrlParent,ws=True,m=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1])
         
         prevCtrl=None
         for i in range(self.numCtrls):
             ctrlXform=mpMath.Transform(jointList[0])
-            zero,ctrl = self.addCtrl('Ctrl%02d'%i,type='FK',shape='box',parent=self.pinParent,xform=ctrlXform)
+            zero,ctrl = self.addCtrl('Ctrl%02d'%i,type='FK',shape='box',parent=ctrlParent,xform=ctrlXform)
             ctrlXform.scale(0.8,0.8,0.8)
             tZero,tCtrl=self.addCtrl('TweakCtrl%02d'%i,type='FK',shape='cross',parent=ctrl,xform=ctrlXform)
             

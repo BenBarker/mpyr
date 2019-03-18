@@ -20,13 +20,14 @@ class SpineFK(limbBase.Limb):
             raise RuntimeError('invalid endJoint: %s' % self.endJoint)
 
     def build(self):
+        self.addPinWorld()
         jointList = mpJoint.getJointList(self.startJoint,self.endJoint)
         if len(jointList) < 2:
             raise RuntimeError('SpineFK requires at least 2 joints in chain. Got %s'%len(jointList))
         
         #start with FK chain on all joints
         self.addPinParent()
-        spineCtrls = self.addFKChain(jointList[0],jointList[-1],self.pinParent)
+        spineCtrls = self.addFKChain(jointList[0],jointList[-1],self.pinWorld)
 
         #rewire first joint to have an extra offset
         mpAttr.breakConnections(jointList[0],'srt')

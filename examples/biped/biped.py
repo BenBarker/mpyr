@@ -3,13 +3,13 @@ import os
 import maya.cmds as cmds
 import mpyr.rig.rigbase as mpRigBase
 import mpyr.rig.limb.generic as generic
-reload(generic)
 import mpyr.rig.limb.leg as legs
 import mpyr.rig.limb.spine as spines
+import mpyr.lib.deformer as libDef
 
 import logging
 rigLog = logging.getLogger('rig')
-rigLog.setLevel(logging.INFO)
+rigLog.setLevel(logging.DEBUG)
 
 class CharacterRig(mpRigBase.AnimRig):
     def __init__(self):
@@ -21,14 +21,16 @@ class CharacterRig(mpRigBase.AnimRig):
         #For this example I keep it next to the .py file, so I find based
         #on __file__
         self.skeletonPath=os.path.join(os.path.split(__file__)[0],'bipedSkeleton.ma')
-        self.geoPath = ''
+        self.geoPath = os.path.join(os.path.split(__file__)[0],'heroMesh.ma')
         
     def build(self):
         self.importSkeleton()
         self.importGeo()
+        libDef.loadSkinWeights('body',os.path.join(os.path.split(__file__)[0],'heroMeshWeights.xml'))
 
         #Create Limbs
         spine = generic.NurbsStrip()
+        spine.numCtrls=8
         spine.name.part='Spine'
         spine.startJoint='Root'
         spine.endJoint='Spine_04'

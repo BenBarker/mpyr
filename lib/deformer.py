@@ -49,12 +49,15 @@ def loadSkinWeights(mesh,path):
     if cmds.nodeType(mesh)=='skinCluster':
         skinCluster=mesh
     else:
-        #create skinCluster
-        joints=getJointsFromSkinFile(path)
-        if not joints:
-            raise RuntimeError('Could not find joints in skinweights xml:%s'%path)
-        joints.append(mesh)
-        skinCluster=cmds.skinCluster(*joints,tsb=True)[0]
+        #try to find:
+        skinCluster = mel.eval('findRelatedSkinCluster("%s");'%mesh)
+        if not skinCluster:
+            #create skinCluster
+            joints=getJointsFromSkinFile(path)
+            if not joints:
+                raise RuntimeError('Could not find joints in skinweights xml:%s'%path)
+            joints.append(mesh)
+            skinCluster=cmds.skinCluster(*joints,tsb=True)[0]
 
     cmds.deformerWeights(fileName,path=fileDir,deformer=skinCluster,im=True)
 
