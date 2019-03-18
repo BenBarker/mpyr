@@ -27,10 +27,12 @@ class CharacterRig(mpRigBase.AnimRig):
         self.importSkeleton()
         self.importGeo()
         libDef.loadSkinWeights('body',os.path.join(os.path.split(__file__)[0],'heroMeshWeights.xml'))
+        cmds.parent('hair','Head_01')
 
         #Create Limbs
-        spine = generic.NurbsStrip()
-        spine.numCtrls=8
+        #spine = generic.NurbsStrip()
+        #spine.numCtrls=8
+        spine = spines.SpineFK()
         spine.name.part='Spine'
         spine.startJoint='Root'
         spine.endJoint='Spine_04'

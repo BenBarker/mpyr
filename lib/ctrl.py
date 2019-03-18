@@ -92,9 +92,19 @@ def changeCtrlShape(ctrl,newShape,shapeXform=None,size=1.0,segments=13):
 
     newShape = cmds.listRelatives(newCrv,s=True)[0]
     oldShape = cmds.listRelatives(ctrl,s=True)[0]
-    cmds.connectAttr(newShape + ".local", oldShape + ".create")
-    cmds.getAttr(oldShape + ".local")
+    cmds.connectAttr(newShape + ".local", oldShape + ".create",force=True)
+    cmds.delete(cmds.cluster(oldShape)) #force update of crv shape
     cmds.delete(newCrv)
+
+def copyCtrlShape(src,dst):
+    '''given a source curve, copy it's shape to destination curve'''
+    if cmds.nodeType(src)=='transform':
+        src = cmds.listRelatives(src,s=True)[0]
+    if cmds.nodeType(dst)=='transform':
+        dst = cmds.listRelatives(dst,s=True)[0]
+    cmds.connectAttr(src+".worldSpace",dst+".create",force=True)
+    cmds.delete(cmds.cluster(dst)) #force update of crv shape
+    cmds.disconnectAttr(src+".worldSpace",dst+".create")
 
 def getCurve(shape,size=1.0,segments=13):
     '''given a shape name return the corresponding curve.
