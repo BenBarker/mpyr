@@ -107,7 +107,7 @@ class LegFKIK(limbBase.Limb):
 
         #delete old aimCtrl blend cns
         cmds.delete(cmds.listConnections(aimCtrlZero+'.tx',s=1,d=0)[0])
-        cmds.pointConstraint(ballCtrl,self.pinWorld,aimCtrlZero,mo=True)
+        cmds.pointConstraint(self.pinWorld,endNull,aimCtrlZero,mo=True)
 
 
         #delete old IK ctrl and wire IK to new foot ctrl
