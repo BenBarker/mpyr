@@ -32,7 +32,7 @@ def saveSkinWeights(mesh,path,force=False):
     cmds.deformerWeights(fileName,path=fileDir,deformer=skinCluster,export=True)
 
 def loadSkinWeights(mesh,path):
-    '''wrapper for deformerWeights command, however will parse xml,
+    '''wrapper for deformerWeights command, however will parse xml and
     find joints, and create skinCluster if none is specified
     mesh: mesh or skinCluster node to load onto (if mesh, skinCluster will be created)
     path: path to xml file
@@ -57,9 +57,11 @@ def loadSkinWeights(mesh,path):
             if not joints:
                 raise RuntimeError('Could not find joints in skinweights xml:%s'%path)
             joints.append(mesh)
-            skinCluster=cmds.skinCluster(*joints,tsb=True)[0]
-
-    cmds.deformerWeights(fileName,path=fileDir,deformer=skinCluster,im=True)
+            skinCluster=cmds.skinCluster(*joints,tsb=True,nw=0)[0]
+            #zero everything, was seeing weird values perhaps from initial default weights.
+            cmds.skinPercent(skinCluster,mesh,pruneWeights=100,normalize=False)
+    #load new weights
+    cmds.deformerWeights(fileName,path=fileDir,deformer=skinCluster,im=True,method='index')
 
 def getJointsFromSkinFile(path):
     '''given a skinweights xml file return joint names in a list'''
