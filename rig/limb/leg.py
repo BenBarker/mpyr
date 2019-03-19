@@ -96,17 +96,28 @@ class LegFKIK(limbBase.Limb):
         cmds.parentConstraint(ballCtrl,ankleIKCtrl,mo=True)
 
         #swap out foot for old IK handle ctrl
-        #First retrieve effector, handle, and endNull from IK system
+        #First retrieve effector, handle, aim, and endNull from IK system
         effector = cmds.listConnections(jointList[-3]+'.tx',s=0,d=1)[0]
         handle = cmds.listConnections(effector+'.handlePath[0]',s=0,d=1)[0]
         handleCns = cmds.listConnections(handle+'.tx',s=1,d=0)[0]
         endNull = cmds.listConnections(handleCns+'.target[0].targetTranslate',s=1,d=0)[0]
         endNullCns = cmds.listConnections(endNull+'.tx',s=1,d=0)[0]
+        aimCtrl = legCtrls[-2]
+        aimCtrlZero = cmds.listRelatives(aimCtrl,p=True)[0]
+
+        #delete old aimCtrl blend cns
+        cmds.delete(cmds.listConnections(aimCtrlZero+'.tx',s=1,d=0)[0])
+        cmds.pointConstraint(ballCtrl,self.pinWorld,aimCtrlZero,mo=True)
+
 
         #delete old IK ctrl and wire IK to new foot ctrl
         cmds.delete(endNullCns)
         cmds.parentConstraint(ballCtrl,endNull,mo=True)
         self.deleteCtrl(legCtrls[-1])
+
+        #also reconstrain aim to follow ball ctrl
+        #it's already cnd to pinWorld from addFKIKChain, just add new cns to ball to get blending back
+
 
         #add new pickwalk/snap info
         mpRig.addPickParent(footCtrl,legCtrls[-2])

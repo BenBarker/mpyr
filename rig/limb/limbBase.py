@@ -367,7 +367,7 @@ class Limb(object):
         cmds.poleVectorConstraint(aimCtrl,handle)
 
         #make the aim float between end and root of ik system
-        cmds.parentConstraint(endCtrl,worldParent,aimZero,mo=True,skipRotate=('x','y','z'))
+        cmds.pointConstraint(endCtrl,worldParent,aimZero,mo=True)
 
         #Construct the blend
         FKIKblender = self.addAttrLimb(ln=mpName.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
