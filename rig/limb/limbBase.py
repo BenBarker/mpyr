@@ -337,6 +337,31 @@ class Limb(object):
         endV = mpMath.Vector(endJoint)
         aimV = mpRig.getAimVector(startJoint,midJoint,endJoint)
 
+        #lock mid ctrls axes so the FK system can only rotate on one plane.
+        #This is needed so the IK system, which is always on a plane, can snap to the FK system
+        #First find which axis will be locked by checking its local axes against the 
+        #normal vector of the chain. The highest dot product is the most parallel.
+        #Note: I may need to lock joint DoF as well, sometimes Maya injects tiny rotation values there
+        #when in IK mode.
+        startV = mpMath.Vector(startJoint)
+        chainMid = midV-startV
+        chainEnd = endV-startV
+        chainMid.normalize()
+        chainEnd.normalize()
+        chainNormal=chainMid.cross(chainEnd)
+        chainNormal.normalize()
+        axes=['x','y','z']
+        for ctrl in fkCtrls[1:-1]:
+            ctrlXform = mpMath.Transform(ctrl)
+            dots = list()
+            dots.append(abs(ctrlXform.xAxis().dot(chainNormal)))
+            dots.append(abs(ctrlXform.yAxis().dot(chainNormal)))
+            dots.append(abs(ctrlXform.zAxis().dot(chainNormal)))
+            del axes[dots.index(max(dots))]
+            for axis in axes:
+                mpAttr.lockAndHide(ctrl,['r%s'%axis])
+            
+
         aimZero,aimCtrl = self.addCtrl('aim',type='IK',shape='cross',parent=worldParent,xform=aimV)
         endZero,endCtrl = self.addCtrl('end',type='IK',shape='cube',parent=worldParent,xform=endV)
 
@@ -387,7 +412,12 @@ class Limb(object):
         mpRig.addPickParent(endCtrl,aimCtrl)
 
         #setup IK->FK snapping messages
-        mpRig.addSnapParent(endCtrl, fkCtrls[-1]) 
+        #Since the IK end ctrl and the last FK ctrl can have totally different oris,
+        #make a null matching the IK's ori under the FK ctrl to act as a snap target
+        self.name.desc='ikEndSnap'
+        endSnapNull=cmds.group(em=True,n=self.name.get(),p=fkCtrls[-1])
+        cmds.xform(endSnapNull,ws=True,m=cmds.xform(endCtrl,q=True,ws=True,m=True))
+        mpRig.addSnapParent(endCtrl, endSnapNull) 
         mpRig.addSnapParent(aimCtrl, fkCtrls[0])
         mpRig.addSnapParent(aimCtrl, fkCtrls[1])
         mpRig.addSnapParent(aimCtrl, fkCtrls[2])
