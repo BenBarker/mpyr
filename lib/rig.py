@@ -499,7 +499,10 @@ def snapIKFK(ikctrl):
             aimXform = rigmath.Transform(aimV)
             results[ctrl]=aimXform.get()
 
-    for i in range(2): #bug fix for some IK limbs that need multiple snaps to reach the goal
+    #bug fix for some IK limbs that need multiple snaps to reach the goal
+    #This is because IK hierarchies can be arbitrary, and it's difficult to determine
+    #which controls move others, so this takes an iterative approach
+    for i in range(4):
         for ctrl,value in results.iteritems():
             if not value:
                 resetCtrl(ctrl)
