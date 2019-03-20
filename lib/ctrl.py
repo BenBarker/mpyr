@@ -12,7 +12,7 @@ import rigmath
 
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
     '''make a ctrl with a given shape out of a curve, parented under a zero null
-    shape: sphere,cube,circle,cross,pyramid
+    shape: sphere,cube,circle,cross,pyramid,line,spoon
     size: defaults to 1.0
     segments: used on round shapes, defaults to 13
     parent: object to parent under (if any)
@@ -119,6 +119,7 @@ def getCurve(shape,size=1.0,segments=13):
         'square':makeSquare,
         'pyramid':makePyramid,
         'line':makeLine,
+        'spoon':makeSpoon
         }
     try:
         crv = shapeFactory[shape](size=size,segments=segments)
@@ -207,7 +208,7 @@ def makeCross(size=1.0,**kwargs):
         )
     return cmds.curve(degree=1, p=verts,k=range(len(verts)))
         
-def makePyramid(size=1.0, **kwargs):
+def makePyramid(size=1.0,**kwargs):
     '''make a pyramid shape curve with given size'''
     m=size*0.5
     nm=m*-1.0
@@ -260,4 +261,13 @@ def makeLine(size=1.0,**kwargs):
     '''make a line shaped nurbs curve with given size as length. Defaults sticking out +Y'''
     verts=([0,0,0],[0,size,0])
     return cmds.curve(d=1, p=verts,k=range(len(verts)))
+
+def makeSpoon(size=1.0,**kwargs):
+    '''make a line with a circle on the end, length = size. Defaults to sticking out +Y'''
+    spoonSizePct=0.1
+    sw=size*spoonSizePct*0.5 #spoon width
+    hl=size*(1-spoonSizePct) #handle length
+    verts=([0,0,0],[0,hl,0],[sw,hl,0],[sw,hl+sw*2,0],[-sw,hl+sw*2,0],[-sw,hl,0],[0,hl,0])
+    return cmds.curve(d=1, p=verts,k=range(len(verts)))
+
     

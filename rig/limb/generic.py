@@ -110,7 +110,7 @@ class FKCurlChain(FKChain):
             cmds.parent(ctrl,curlNull)
             curls.append(curlNull)
         #make curl ctrl
-        curlZero,curlCtrl = self.addCtrl('curl',type='FK',shape='line',parent=self.pinParent,xform=self.ctrls[0],size=3.5)
+        curlZero,curlCtrl = self.addCtrl('curl',type='FK',shape='spoon',parent=self.pinParent,xform=self.ctrls[0],size=3.5)
         mpAttr.lockAndHide(curlCtrl,'t')
 
         #connect curl ctrl
