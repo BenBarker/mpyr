@@ -9,9 +9,14 @@ uses the world matrix, or by default just an identity matrix.
 
 Vectors and Transforms can be multiplied/added/subtracted with each other, where it 
 makes sense.
+This module can be used outside of maya, however some methods that query maya objects will fail.
+
 '''
-import maya.cmds as cmds
 import math
+try:
+    import maya.cmds as cmds
+except ImportError:
+    cmds=None
 
 def degToRad(deg):
     '''convert degree to radians'''
@@ -54,10 +59,10 @@ class Vector(object):
                 self.setFromVector(args[0].getTranslation())
             elif hasattr(args[0],'__iter__'):
                 self.setFromList(args[0])
-            elif cmds.objExists(args[0]):
-                self.setFromObj(args[0])
             elif isinstance(args[0], (int, long, float)):
                 self.setFromScalar(args[0])
+            elif cmds and cmds.objExists(args[0]):
+                self.setFromObj(args[0])
             else:
                 raise RuntimeError("Could not create vector from args: %s" % args)
         elif len(args)==3:
@@ -86,6 +91,8 @@ class Vector(object):
         
     def setFromObj(self,obj):
         '''set vector to a maya object's world space transform'''
+        if not cmds:
+            raise RuntimeError("Maya.cmds not found. This method can only be used inside Maya")
         self.x,self.y,self.z = cmds.xform(obj,ws=True,q=True,t=True)
     
     def get(self):
@@ -221,7 +228,7 @@ class Transform(object):
                     self.setFromList(args[0].get())
                 elif hasattr(args[0],'__iter__'):
                     self.setFromList(args[0])
-                elif cmds.objExists(args[0]):
+                elif cmds and cmds.objExists(args[0]):
                     self.setFromObj(args[0])
                 else:
                     raise RuntimeError("can't find '%s' in scene to make matrix"%args[0])
@@ -236,6 +243,8 @@ class Transform(object):
         return 16
             
     def setFromObj(self,obj):
+        if not cmds:
+            raise RuntimeError("Maya.cmds not found. This method can only be used inside Maya")
         self._matrix=cmds.xform(obj,ws=True,m=True,q=True)
         
     def setFromList(self,other):

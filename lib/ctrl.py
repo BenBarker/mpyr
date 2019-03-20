@@ -6,10 +6,6 @@ import attr
 import name
 import rigmath
 
-#reload(attr)
-#reload(name)
-#reload(rigmath)
-
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
     '''make a ctrl with a given shape out of a curve, parented under a zero null
     shape: sphere,cube,circle,cross,pyramid,line,spoon
