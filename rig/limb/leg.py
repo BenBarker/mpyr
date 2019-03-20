@@ -39,7 +39,9 @@ class LegFKIK(limbBase.Limb):
         ballFKZero,ballFKCtrl = self.addCtrl('%02d'%len(jointList[:-2]),type='FK',shape='sphere',parent=legCtrls[-3],xform=jointList[-2])
         mpAttr.lockAndHide(ballFKCtrl,'t')
         cmds.orientConstraint(ballFKCtrl,jointList[-2],mo=True)
-        mpRig.addPickParent(ballFKCtrl,legCtrls[-2])
+
+        #addFKIKChain returns list with [...,lastFK,IKAim,IKEnd], so grabbing last FK for pick parent:
+        mpRig.addPickParent(ballFKCtrl,legCtrls[-3])
 
         #create classic 'reverse foot' setup
         if self.heel:
