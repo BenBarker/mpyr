@@ -11,7 +11,7 @@ import logging
 rigLog = logging.getLogger('rig')
 rigLog.setLevel(logging.DEBUG)
 
-class CharacterRig(mpRigBase.AnimRig):
+class Rig(mpRigBase.AnimRig):
     def __init__(self):
         mpRigBase.AnimRig.__init__(self)
 
@@ -36,6 +36,11 @@ class CharacterRig(mpRigBase.AnimRig):
         spine.name.part='Spine'
         spine.startJoint='Root'
         spine.endJoint='Spine_04'
+
+        head = generic.FKCurlChain()
+        head.name.part='Head'
+        head.startJoint='Neck_01'
+        head.endJoint='Head_01'
         
         legL = legs.LegFKIK()
         legL.name.part = 'Leg'
@@ -59,6 +64,7 @@ class CharacterRig(mpRigBase.AnimRig):
         handR = handL.mirror()
 
         self.addLimb(spine)
+        self.addLimb(head)
         self.addLimb(legL)
         self.addLimb(legR)
         self.addLimb(armL)
@@ -73,3 +79,4 @@ class CharacterRig(mpRigBase.AnimRig):
         armR > 'Clav_R_02'
         handL > 'Arm_L_03'
         handR > 'Arm_R_03'
+        head > 'Spine_04'
