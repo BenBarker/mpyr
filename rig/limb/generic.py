@@ -5,6 +5,7 @@ import mpyr.lib.rigmath as mpMath
 import mpyr.lib.rig as mpRig
 import mpyr.lib.joint as mpJoint
 import mpyr.lib.nurbs as mpNurbs
+import mpyr.lib.attr as mpAttr
 import limbBase
 
 class WorldOffset(limbBase.Limb):
@@ -91,6 +92,31 @@ class FKChain(limbBase.Limb):
     def build(self):
         self.addPinBlend()
         self.addFKChain(self.startJoint,self.endJoint,self.pinBlend)
+
+class FKCurlChain(FKChain):
+    '''simple FK chain with addition of a 'curl' ctrl at the base that lets you rotate all ctrls
+    at once.
+    '''
+    def build(self):
+        FKChain.build(self)
+        #add offset between each ctrl
+        curls=list()
+        for idx,ctrl in enumerate(self.ctrls):
+            #get zero null:
+            zero=cmds.listRelatives(ctrl,p=1)[0]
+            self.name.desc='Curl%02d'%idx
+            curlNull=cmds.group(em=True,n=self.name.get(),p=zero)
+            cmds.xform(curlNull,ws=True,m=cmds.xform(zero,q=True,ws=True,m=True))
+            cmds.parent(ctrl,curlNull)
+            curls.append(curlNull)
+        #make curl ctrl
+        curlZero,curlCtrl = self.addCtrl('curl',type='FK',shape='line',parent=self.pinParent,xform=self.ctrls[0],size=3.5)
+        mpAttr.lockAndHide(curlCtrl,'t')
+
+        #connect curl ctrl
+        for curl in curls:
+            for axis in 'xyz':
+                cmds.connectAttr(curlCtrl+'.r%s'%axis,curl+'.r%s'%axis)
          
 class FKIKChain(limbBase.Limb):
     '''Simple FK and IK chain, with FKIK blend, meant for at least three joints (not single chain IK)
@@ -220,7 +246,6 @@ class NurbsStrip(limbBase.Limb):
             #Use closest point to to find jnt's percent along the curve
             cmds.setAttr(closestPoint+'.ip',*cmds.xform(jnt,q=True, t=True, ws=True))
             percentage = cmds.getAttr(closestPoint+'.r.v')
-            print "PERCENTAGE",jnt,percentage
             #attach to surface
             posNode,aimCnss,moPath,slider = self.attachObjToSurf(locator,surf,offsetCrv,stretchAmountNode,percentage)
 
