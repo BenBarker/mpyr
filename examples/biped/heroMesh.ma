@@ -1,16 +1,13 @@
 //Maya ASCII 2016 scene
-//Name: heroMesh.ma
-//Last modified: Mon, Mar 18, 2019 04:26:34 PM
+//Name: heroMesh2.ma
+//Last modified: Wed, Mar 20, 2019 02:36:33 PM
 //Codeset: 1252
 requires maya "2016";
-requires "stereoCamera" "10.0";
 requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
 fileInfo "version" "2016";
-fileInfo "cutIdentifier" "201502261600-953408";
-fileInfo "osv" "Microsoft Windows 7 Home Premium Edition, 64-bit Windows 7 Service Pack 1 (Build 7601)\n";
 createNode transform -n "body";
 	rename -uid "C57B071A-4916-46DC-3733-049B76C6219A";
 createNode mesh -n "bodyShape" -p "body";
@@ -20,7 +17,7 @@ createNode mesh -n "bodyShape" -p "body";
 	setAttr ".vif" yes;
 	setAttr ".pv" -type "double2" 0.51375812292098999 1 ;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 7264 ".uvst[0].uvsp";
+	setAttr -s 7340 ".uvst[0].uvsp";
 	setAttr ".uvst[0].uvsp[0:249]" -type "float2" 0 1 0 1 0 1 0 1 0 1 0 1 0 1
 		 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0
 		 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1
@@ -1050,8 +1047,22 @@ createNode mesh -n "bodyShape" -p "body";
 		 1 0.16351663 0 0.58819544 0 0.42129412 1.000000119209 0 0.95771629 0.11499222 0 0.37056828
 		 0 0.38553309 0.95713413 0 1 0 0 0.44606608 0 0.81311738 0.83751869 0.61378002 1 0
 		 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0;
-	setAttr ".uvst[0].uvsp[7250:7263]" 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0
-		 0 1 0 0.52751625 0.75 0.5 0.75;
+	setAttr ".uvst[0].uvsp[7250:7339]" 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0
+		 0 1 0 0.52751625 0.75 0.5 0.75 0.20971136 0 0.69320279 0 0.44310245 1 0 0.81224251
+		 0 0 0.74230254 3.7101581e-016 0.6817289 0.97331142 0.069681592 1 0 3.8046891e-016
+		 0.47592139 0 0.31306732 0.95603383 0.0092182998 1 0.2135298 0 0.55694628 3.9374888e-016
+		 0.3180255 1 0 0.98491764 0 0 0.20312935 1.9153333e-016 0.23186903 0.94351155 0.022515057
+		 1 0 0 0.34110215 2.0354938e-016 0.23312609 0.92866534 0.079672419 1 0 0 0.43210375
+		 0 0.9313044 0.20301221 0.99999994 0.50407624 0 0 0.51979142 1.8309259e-015 1 0.15355979
+		 0 5.8847196e-016 0.99999994 0 0.035517674 0.27936804 0.62717575 1.2793285e-016 1
+		 0 0 0.51541919 0.21414833 0.26110607 0 0 0.48349145 0 0.69320279 0.81224251 0.25010037
+		 1 0 3.7101581e-016 0.74230254 0 0.67262095 1 0.06057363 0.97331142 0 0 0.47592139
+		 3.8046891e-016 0.46670309 1 0.16285406 0.95603383 0 3.9374888e-016 0.34341648 0 0.55694628
+		 0.98491764 0.23892078 1 0.028739678 1.9153333e-016 0.23186903 0 0.20935397 1 0 0.94351155
+		 0 2.0354938e-016 0.34110215 0 0.26142976 1 0.10797607 0.92866534 0.56789625 0 0.99999994
+		 0 0 0.50407624 0.068695538 0.20301221 0.48020864 1.8309259e-015 1 0 0 0.15355979
+		 0 0 1 9.1326576e-015 0.043431055 0.27707592 0 0 0.37282425 1.2793285e-016 0.78585166
+		 0.26110607 1 0.51541919;
 	setAttr ".cuvs" -type "string" "map1";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
@@ -2681,7 +2692,7 @@ createNode mesh -n "bodyShape" -p "body";
 		 -0.25906453 17.82457924 1.036676168 -0.25906453 17.85826302 0.8818022 -0.28198391 17.79239655 1.019953609
 		 -0.28198391 17.85199165 0.88099611 -0.28230938 17.72481728 1.028107285 -0.28230938 17.76747894 0.88138908
 		 -0.42768586 13.31249905 -1.44766939;
-	setAttr -s 9621 ".ed";
+	setAttr -s 9639 ".ed";
 	setAttr ".ed[0:165]"  1 0 1 1 2 1 2 3 1 0 3 1 4 5 1 5 6 1 6 7 1 4 7 1 8 9 1
 		 9 10 1 10 11 1 8 11 1 12 13 1 13 14 1 14 15 0 15 12 1 14 16 1 16 17 1 17 15 1 16 4 1
 		 7 17 1 18 10 1 9 19 1 19 18 1 2 20 1 20 21 1 21 3 0 22 23 1 23 24 1 24 25 1 22 25 1
@@ -3994,7 +4005,7 @@ createNode mesh -n "bodyShape" -p "body";
 		 4666 4776 1 4665 4777 1 4664 4778 1 4663 4779 1 4662 4780 1 4661 4781 1 4660 4782 1
 		 4659 4783 1 4658 4784 1 4657 4785 1 4656 4786 1 3573 3846 1 3574 3845 1 3585 3858 1
 		 3586 3857 1 3581 3854 1 3582 3853 1 3590 3863 1 3588 3861 1 3577 3850 1 3578 3849 1;
-	setAttr ".ed[9462:9620]" 3594 3867 1 3601 3874 1 3602 3873 1 3597 3870 1 3598 3869 1
+	setAttr ".ed[9462:9627]" 3594 3867 1 3601 3874 1 3602 3873 1 3597 3870 1 3598 3869 1
 		 3606 3881 1 3604 3879 1 3592 3865 1 3682 4619 1 3714 4636 1 3712 4635 1 3710 4634 1
 		 3708 4633 1 3706 4632 1 3704 4631 1 3702 4630 1 3700 4629 1 3698 4628 1 3696 4627 1
 		 3694 4626 1 3692 4625 1 3689 4624 1 3690 4623 1 3686 4622 1 3684 4621 1 3681 4620 1
@@ -4016,8 +4027,11 @@ createNode mesh -n "bodyShape" -p "body";
 		 4810 4808 1 4811 4809 0 4803 4798 1 4801 4804 0 4794 4790 1 4795 4793 0 4789 4800 1
 		 4795 4801 1 4793 4804 1 4792 4805 1 4797 4807 1 3181 4788 1 3186 4794 1 3185 4790 1
 		 3184 4791 1 3190 4796 1 3188 4810 1 3189 4808 1 3200 4806 1 3199 4802 1 3195 4803 1
-		 3194 4798 1 3197 4799 1 2841 3839 1 3838 4812 1 2841 4812 1 4812 2457 1 4812 2665 1;
-	setAttr -s 4806 -ch 19162 ".fc";
+		 3194 4798 1 3197 4799 1 2841 3839 1 3838 4812 1 2841 4812 1 4812 2457 1 4812 2665 1
+		 2194 2199 0 2186 2192 0 2205 2204 0 2206 2207 0 2193 2182 0 2183 2206 0 2191 2190 0;
+	setAttr ".ed[9628:9638]" 2188 2189 0 2184 2181 0 4765 4768 0 4718 4730 0 4715 4729 0
+		 4746 4748 0 4748 4703 0 4704 4732 0 4721 4724 0 4722 4714 0 4699 4706 0;
+	setAttr -s 4826 -ch 19238 ".fc";
 	setAttr ".fc[0:499]" -type "polyFaces" 
 		f 4 -1 1 2 -4
 		mu 0 4 0 1 2 3
@@ -13027,7 +13041,7 @@ createNode mesh -n "bodyShape" -p "body";
 		mu 0 4 6860 6863 6862 6861
 		f 4 9181 9185 -9185 -9184
 		mu 0 4 6864 6867 6866 6865;
-	setAttr ".fc[4500:4805]"
+	setAttr ".fc[4500:4825]"
 		f 4 9184 9188 -9188 -9187
 		mu 0 4 6868 6871 6870 6869
 		f 4 9187 9191 -9191 -9190
@@ -13639,7 +13653,47 @@ createNode mesh -n "bodyShape" -p "body";
 		f 4 -5439 5251 -9621 -9619
 		mu 0 4 4016 3838 3839 7262
 		f 4 4862 -9620 9620 5822
-		mu 0 4 4303 7263 7262 3839;
+		mu 0 4 4303 7263 7262 3839
+		f 4 -4327 9621 4331 9622
+		mu 0 4 7264 7265 7266 7267
+		f 4 -4346 9623 4343 -9622
+		mu 0 4 7268 7269 7270 7271
+		f 4 -4348 9624 4349 -9624
+		mu 0 4 7272 7273 7274 7275
+		f 4 -4325 9625 4303 9626
+		mu 0 4 7276 7277 7278 7279
+		f 4 -4326 9627 4317 -9626
+		mu 0 4 7280 7281 7282 7283
+		f 4 -4321 9628 4316 -9628
+		mu 0 4 7284 7285 7286 7287
+		f 4 4312 9629 4318 -9629
+		mu 0 4 7288 7289 7290 7291
+		f 3 4305 4300 -9630
+		mu 0 3 7292 7293 7294
+		f 3 -9625 -9627 4313
+		mu 0 3 7295 7296 7297
+		f 4 -4323 -9623 -4309 -4311
+		mu 0 4 7298 7299 7300 7301
+		f 4 9341 9630 -9340 9631
+		mu 0 4 7302 7303 7304 7305
+		f 4 9267 -9632 -9251 9632
+		mu 0 4 7306 7307 7308 7309
+		f 4 9294 -9633 -9299 9633
+		mu 0 4 7310 7311 7312 7313
+		f 4 9296 9634 -9233 9635
+		mu 0 4 7314 7315 7316 7317
+		f 4 9270 -9636 -9257 9636
+		mu 0 4 7318 7319 7320 7321
+		f 4 9260 -9637 -9254 9637
+		mu 0 4 7322 7323 7324 7325
+		f 4 -9246 -9638 -9259 9638
+		mu 0 4 7326 7327 7328 7329
+		f 3 -9236 -9639 -9229
+		mu 0 3 7330 7331 7332
+		f 3 -9635 -9634 -9292
+		mu 0 3 7333 7334 7335
+		f 4 9332 9334 9336 -9631
+		mu 0 4 7336 7337 7338 7339;
 	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
@@ -14234,9 +14288,9 @@ createNode blinn -n "blinn1";
 	setAttr ".c" -type "float3" 0.46587321 0.46587321 0.46587321 ;
 	setAttr ".sc" -type "float3" 0 0 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "BC02F580-4C66-7B52-3599-B58C7CB607A8";
-	setAttr -s 4 ".lnk";
-	setAttr -s 4 ".slnk";
+	rename -uid "DFB814BF-4E56-DB1F-D2B7-4198EA176085";
+	setAttr -s 3 ".lnk";
+	setAttr -s 3 ".slnk";
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -14248,15 +14302,13 @@ select -ne :hardwareRenderingGlobals;
 	setAttr ".aora" 18;
 	setAttr ".fprt" yes;
 select -ne :renderPartition;
-	setAttr -s 4 ".st";
+	setAttr -s 3 ".st";
 select -ne :renderGlobalsList1;
 select -ne :defaultShaderList1;
-	setAttr -s 6 ".s";
+	setAttr -s 5 ".s";
 select -ne :postProcessList1;
 	setAttr -s 2 ".p";
-select -ne :defaultRenderUtilityList1;
 select -ne :defaultRenderingList1;
-select -ne :defaultTextureList1;
 select -ne :initialShadingGroup;
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
@@ -14266,8 +14318,6 @@ select -ne :defaultResolution;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
-select -ne :ikSystem;
-	setAttr -s 4 ".sol";
 connectAttr "blinn1SG.msg" "materialInfo2.sg";
 connectAttr "blinn1.msg" "materialInfo2.m";
 connectAttr "blinn1.oc" "blinn1SG.ss";
@@ -14281,4 +14331,4 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 relationship "shadowLink" ":lightLinker1" "blinn1SG.message" ":defaultLightSet.message";
 connectAttr "blinn1SG.pa" ":renderPartition.st" -na;
 connectAttr "blinn1.msg" ":defaultShaderList1.s" -na;
-// End of heroMesh.ma
+// End of heroMesh2.ma
