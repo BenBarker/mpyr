@@ -12,7 +12,7 @@ import rigmath
 
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
     '''make a ctrl with a given shape out of a curve, parented under a zero null
-    shape: sphare,cube,cicle,cross,pyramid
+    shape: sphere,cube,circle,cross,pyramid
     size: defaults to 1.0
     segments: used on round shapes, defaults to 13
     parent: object to parent under (if any)
@@ -117,7 +117,8 @@ def getCurve(shape,size=1.0,segments=13):
         'circle':makeCircle,
         'cross':makeCross,
         'square':makeSquare,
-        'pyramid':makePyramid
+        'pyramid':makePyramid,
+        'line':makeLine,
         }
     try:
         crv = shapeFactory[shape](size=size,segments=segments)
@@ -180,8 +181,8 @@ def getMayaColor(color):
             
 def makeCube(size=1.0,**kwargs):
     '''Make a nurbs curve cube with given size.'''
-    wd = 0.5 * size
-    crn = [
+    wd=0.5*size
+    crn=[
         (-wd,wd,-wd),
         (wd,wd,-wd),
         (wd,-wd,-wd),
@@ -194,14 +195,11 @@ def makeCube(size=1.0,**kwargs):
     verts = (crn[0],crn[1],crn[2],crn[3],crn[0],crn[4],crn[5],crn[6],
         crn[7],crn[4],crn[5],crn[1],crn[0],crn[4],crn[7],crn[3],crn[0],
         crn[1],crn[2],crn[6])
-    return cmds.curve(d=1,
-        p=verts,
-        k=range(len(verts))
-        )
+    return cmds.curve(d=1,p=verts,k=range(len(verts)))
         
 def makeCross(size=1.0,**kwargs):
     '''make a cross shape curve with given size'''
-    m  = size * 0.5
+    m=size*0.5
     verts = ( [(.25*m),0,.75*m], [(.25*m),0,(.25*m)], [.75*m,0,.25*m], [.75*m,0,-.25*m], 
         [.25*m,0,-.25*m], [(.25*m),0,(-.75*m)], [(.25*m),0,-.75*m], [(-.25*m),0,-.75*m], 
         [(-.25*m),0,(-.25*m)], [-.75*m,0,(-.25*m)], [-.75*m,0,(.25*m)], [(-.25*m),0,(.25*m)], 
@@ -211,14 +209,14 @@ def makeCross(size=1.0,**kwargs):
         
 def makePyramid(size=1.0, **kwargs):
     '''make a pyramid shape curve with given size'''
-    m  = size * 0.5
-    nm = m * -1.0
+    m=size*0.5
+    nm=m*-1.0
     verts = ([m,0,m],[nm,0,m],[nm,0,nm],[m,0,nm],[m,0,m],[0,1*m,0],[nm,0,m],[nm,0,nm],[0,1*m,0],[m,0,nm])
     return cmds.curve(d=1, p=verts, k=range(len(verts)))
     
 def makeSphere(size=1.0,segments=13,**kwargs):
     ''' make a sphere shaped nurbs curve with a given size.'''
-    wd = 0.5*size
+    wd=0.5*size
     vertsX = []
     vertsY = []
     vertsZ = []
@@ -236,14 +234,11 @@ def makeSphere(size=1.0,segments=13,**kwargs):
     #to where the third circle begins.
     totalVerts = vertsX+vertsY+vertsX[:segments/3] + vertsZ
     
-    return cmds.curve(d=1,
-        p=totalVerts,
-        k=range(len(totalVerts))
-        )
+    return cmds.curve(d=1,p=totalVerts,k=range(len(totalVerts)))
         
 def makeCircle(size=1.0,segments=13,**kwargs):
     ''' make a circle shaped nurbs curve with a given size and segments.'''
-    wd = 0.5*size
+    wd=0.5*size
     verts = []
     for x in range(segments):
         percent = float(x)/(segments-1)
@@ -252,14 +247,17 @@ def makeCircle(size=1.0,segments=13,**kwargs):
         secCoord = math.cos(toRad) * wd
         verts.append((0,firstCoord,secCoord))
     
-    return cmds.curve(d=1,
-        p=verts,
-        k=range(len(verts))
-        )
+    return cmds.curve(d=1,p=verts,k=range(len(verts)))
         
 def makeSquare(size=1.0,**kwargs):
     '''make a square shaped nurbs curve with given size'''
-    m = size * 0.5
+    m=size*0.5
+    nm=m*-1.0
     verts = ( [m,0,m],[nm,0,m],[nm,0,nm],[m,0,nm] )
+    return cmds.curve(d=1, p=verts,k=range(len(verts)))
+
+def makeLine(size=1.0,**kwargs):
+    '''make a line shaped nurbs curve with given size as length. Defaults sticking out +Y'''
+    verts=([0,0,0],[0,size,0])
     return cmds.curve(d=1, p=verts,k=range(len(verts)))
     
