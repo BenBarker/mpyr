@@ -104,6 +104,8 @@ def getLimbCtrls(ctrlName):
     ctrls = []
     limbSet = getCtrlSet(ctrlName)
     allSets = cmds.sets(limbSet,q=True)
+    if not allSets:
+        raise RuntimeError("Limb ctrls set not found, check ctrl set names")
     for ctrlSet in allSets:
         for obj in cmds.sets(ctrlSet,q=True):
             if ctrl.isCtrl(obj):
@@ -462,6 +464,12 @@ def getAimVector(start,mid,end,distance=0.5):
     chainNormal = chainV.cross(upperV)
     elbowV = chainNormal.cross(chainV)
     elbowV.normalize()
+
+    #throw error if the chain isn't bent. Snapping becomes unpredictable.
+    #This might still need to be lowered.
+    print(abs(chainV.dot(upperV)))
+    if abs(chainV.dot(upperV)) > 0.998:
+        raise RuntimeError("Cannot calculate aim, is chain hyper extended?")
 
     aimV = elbowV*chainLength*distance #get an aethetic distance from the chain
     aimV += midV 
