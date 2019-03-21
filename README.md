@@ -49,7 +49,7 @@ import mpyr.examples.biped.biped as bip
 rig = bip.Rig()
 rig.create()
 ```
-This will build the animation rig. The script, mesh, and skin weights for this example are all found in the examples/biped directory. The main rig code is in the build.py file, which is the best example of what mpyr build scripts look like.
+This will build the animation rig. The script, mesh, and skin weights for this example are all found in the examples/biped directory. The main rig code is in the biped.py file, which is the best example of what mpyr build scripts look like.
 
 Some general tools are also available in the /tools directory. To launch the rig tools (snap, reset, etc) run:
 ```python
