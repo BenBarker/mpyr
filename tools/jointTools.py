@@ -1,4 +1,4 @@
-'''Tools for performing rig actions, mirror limbs, reset etc.'''
+'''Tools for joint orient workflow'''
 import maya.cmds as cmds
 
 class JointOrientTool(object):
