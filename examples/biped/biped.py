@@ -27,7 +27,8 @@ class Rig(mpRigBase.AnimRig):
         self.importSkeleton()
         self.importGeo()
         libDef.loadSkinWeights('body',os.path.join(os.path.split(__file__)[0],'heroMeshWeights.xml'))
-        cmds.parent('hair','Head_01')
+        for obj in ('hair','Eye_L_Mesh','Eye_R_Mesh'):
+            cmds.parent(obj,'Head_01')
 
         #Create Limbs
         #spine = generic.NurbsStrip()
