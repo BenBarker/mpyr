@@ -41,3 +41,25 @@ DeformRigs can also be stacked. Each character can have multiple deform rigs han
 
 ## Note
 Currently only the animRig is provided. Deformation and caching functions are in development.
+
+## Example
+The package comes with some example rigs. Currently the only non trivial example is the biped anim rig. To build the rig download the package to a place where Maya can see it. Then run:
+```python
+import mpyr.examples.biped.biped as bip
+rig = bip.Rig()
+rig.create()
+```
+This will build the animation rig. The script, mesh, and skin weights for this example are all found in the examples/biped directory. The main rig code is in the build.py file, which is the best example of what mpyr build scripts look like.
+
+Some general tools are also available in the /tools directory. To launch the rig tools (snap, reset, etc) run:
+```python
+import mpyr.tools.rigTools as rt
+rt.RigTools()
+```
+And to run the joint orient tool:
+```python
+import mpyr.tools.jointTools as jt
+jt.JointOrientTool()
+```
+
+A shelf or more convenient way to launch rig builds and tools is planned in a future version.
