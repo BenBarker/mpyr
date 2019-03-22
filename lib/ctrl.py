@@ -58,10 +58,13 @@ def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,
     setAsCtrl(crv)
 
     if xform:
-        if cmds.objExists(xform):
+        #if name of node then math matrix and rotate order
+        if isinstance(xform,str) and cmds.objExists(xform):
             matchMatrix = cmds.xform(xform,q=True,ws=True,m=True)
             attr.matchAttr(xform,zero,"rotateOrder")
             attr.matchAttr(xform,crv,"rotateOrder")
+        #otherwise just match matrix.
+        #wrapping a Transform here for convenience
         else:
             try:
                 matchMatrix = rigmath.Transform(xform).get()

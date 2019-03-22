@@ -483,32 +483,6 @@ class Transform(object):
         a44=1.0      
         self.set(a11,a21,a31,a41,a12,a22,a32,a42,a13,a23,a33,a43,a14,a24,a34,a44)         
 
-    def setFromXYZ(self,x,y,z):
-        '''set the rotation by the given XYZ angles in degrees,
-        in xyz order
-        '''
-        x=degToRad(-x)
-        y=degToRad(-y)
-        z=degToRad(-z)
-        cx=math.cos(x)
-        cy=math.cos(y)
-        cz=math.cos(z)
-        sx=math.sin(x)
-        sy=math.sin(y)
-        sz=math.sin(z)
-        a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44 = self.get()
-
-        a11=cz*cy
-        a12=sz*cx + cz*sy*sx
-        a13=sz*sx - cz*sy*cx	
-        a21=-sz*cy
-        a22=cz*cx - sz*sy*sx	
-        a23=cz*sx + sz*sy*cx 
-        a31=sy	
-        a32=-cy*sx
-        a33=cy*cx  
-        self.set(a11,a21,a31,a41,a12,a22,a32,a42,a13,a23,a33,a43,a14,a24,a34,a44)  
-
     def alignToWorld(self):
         '''UNTESTED. Applies the smallest rotation that will make transform axes parallel to world axes'''
         xa=self.xAxis()
@@ -538,5 +512,5 @@ class Transform(object):
         xAngle = math.acos(xAngle)
         yAngle = math.acos(yAngle)
         zAngle = math.acos(zAngle)
-        self.setFromXYZ(radToDeg(xAngle),radToDeg(yAngle),radToDeg(zAngle))
+        self.setFromEuler(radToDeg(xAngle),radToDeg(yAngle),radToDeg(zAngle))
             

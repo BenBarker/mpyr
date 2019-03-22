@@ -77,7 +77,7 @@ class LegFKIK(limbBase.Limb):
         footCtrlXform.scale(2,0.4,4)
         footCtrlXform.translate(0,heelVec.y-anklePos.y,0)
         toeCtrlXform = mpMath.Transform()
-        toeCtrlXform.setFromXYZ(0,90,0)
+        toeCtrlXform.setFromEuler(0,90,0)
 
         footZero,footCtrl = self.addCtrl('Foot',shape='cube',type='IK',parent=self.pinWorld,xform=mpMath.Vector(jointList[-3]),shapeXform=footCtrlXform)
         heelZero,heelCtrl = self.addCtrl('Heel',shape='circle',type='IK',parent=footCtrl,xform=heelPos,shapeXform=toeCtrlXform)
