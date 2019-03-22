@@ -15,7 +15,11 @@ class Rig(mpRigBase.AnimRig):
     def __init__(self):
         mpRigBase.AnimRig.__init__(self)
 
+        #arbitrary name for top node and possibly other nodes.
         self.rigName = "Biped"
+
+        #a cosmetic scale for ctrls and things
+        self.rigScale=1.2
 
         #Skeleton paths can be specified by user, convention, or database.
         #For this example I keep it next to the .py file, so I find based
@@ -26,11 +30,15 @@ class Rig(mpRigBase.AnimRig):
     def build(self):
         self.importSkeleton()
         self.importGeo()
+
+        #Anim rig can have skinned mesh or parented mesh, it's purely for cosmetics to help
+        #the animator. In this case some weights are loaded and some mesh is parented.
+        #This weight map was saved using the standard "Save weights maps" tool in Maya.
         libDef.loadSkinWeights('body',os.path.join(os.path.split(__file__)[0],'heroMeshWeights.xml'))
         for obj in ('hair','Eye_L_Mesh','Eye_R_Mesh'):
             cmds.parent(obj,'Head_01')
 
-        #Create Limbs
+        #Instance and set up Limbs
         #spine = generic.NurbsStrip()
         #spine.numCtrls=8
         spine = spines.SpineFK()
@@ -64,6 +72,7 @@ class Rig(mpRigBase.AnimRig):
         handL.startJoint='Hand_L_01'
         handR = handL.mirror()
 
+        #"addLimb" is what actually creates the limbs.
         self.addLimb(spine)
         self.addLimb(head)
         self.addLimb(legL)
@@ -74,6 +83,11 @@ class Rig(mpRigBase.AnimRig):
         self.addLimb(handR)
 
         #Wire Limbs
+        #For limbs with only local space the > operator connects them to a parent
+        #For limbs with a blended local/world space the >> operator can change the 
+        #world parent.
+        #By default any world parents will be connected to the world limb, which
+        #is built automatically.
         legL > 'Root'
         legR > 'Root'
         armL > 'Clav_L_02'
