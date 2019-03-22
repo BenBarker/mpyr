@@ -241,6 +241,34 @@ class Transform(object):
             
     def __len__(self):
         return 16
+
+    def setFromEuler(self,x,y,z,order='xyz'):
+        '''Set from three euler angles. Optionally specify order, default="xyz"'''
+        x=degToRad(x);y=degToRad(y);z=degToRad(z)
+        cx=math.cos(x);cy=math.cos(y);cz=math.cos(z)
+        sx=math.sin(x);sy=math.sin(y);sz=math.sin(z)
+        rx=Transform(1,0,0,0,0,cx,sx,0,0,-sx,cx,0,0,0,0,1)
+        ry=Transform(cy,0,-sy,0,0,1,0,0,sy,0,cy,0,0,0,0,1)
+        rz=Transform(cz,sz,0,0,-sz,cz,0,0,0,0,1,0,0,0,0,1)
+
+        order=order.lower()
+        if order=='xzy':
+            rotMatrix=rx*rz*ry
+        elif order=='xyz':
+            rotMatrix=rx*ry*rz
+        elif order=='yxz':
+            rotMatrix=ry*rx*rz
+        elif order=='yzx':
+            rotMatrix=ry*rz*rx
+        elif order=='zyx':
+            rotMatrix=rz*ry*rx
+        elif order=='zxy':
+            rotMatrix=rz*rx*ry
+        else:
+            raise RuntimeError('unknown order argument for setFromEuler:%s'%order)
+
+        for idx in range(11):
+            self._matrix[idx]=rotMatrix[idx]
             
     def setFromObj(self,obj):
         if not cmds:
@@ -341,7 +369,12 @@ class Transform(object):
                 a31*b1,a32*b2,a33*b3,a34,a41,a42,a43,a44)
         else:
             raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" %(self.__class__.__name__ ,other.__class__.__name__))
-            
+    def __getitem__(self,key):
+        return self._matrix[key]
+
+    def __setitem__(self,key,value):
+        self._matrix[key]=float(value)
+
     def reflect(self,plane=None):
         '''reflect the transform about a plane specified as a Vector. If none given the yz
         plane is used.'''
