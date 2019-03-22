@@ -1,9 +1,12 @@
 '''Functions associated with creating and modifying controls, or the nodes that animators
 will be putting keyframes on.'''
 import math
+import os
+import json
 import maya.cmds as cmds
 import attr
 import name
+import fileIO
 import rigmath
 
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
@@ -178,7 +181,61 @@ def getMayaColor(color):
             return(colors.index(color))
         except ValueError:
             raise TypeError("argument must be color index or maya color name")
-            
+
+def saveCtrlAppearance(ctrlList,filePath,force=True):
+    '''given a list of ctrls, save file containing curve ctrl appearence info'''
+    #check path
+    fileIO.ensurePath(filePath,force=force)
+
+    curveData=dict()
+    for ctrl in ctrlList:
+        #get shape node
+        ctrlShape=cmds.listRelatives(ctrl,type='nurbsCurve')
+        if not ctrlShape:
+            raise RuntimeError('curve shape not found under node: %s'%ctrl)
+        ctrlShape=ctrlShape[0]
+        points=cmds.ls(ctrlShape+'.cv[*]',fl=True)
+        roundedPoints=[] #space saving
+        for point in points:
+            roundedPoints.append([round(x,4)for x in cmds.xform(point,objectSpace=True,q=True,t=True)])
+        overrideColor=cmds.getAttr(ctrl+'.overrideColor')
+        overrideRGBColors=cmds.getAttr(ctrl+'.overrideRGBColors')
+        overrideColorRGB=cmds.getAttr(ctrl+'.overrideColorRGB')[0]
+        curveData[ctrl]={
+            'p':roundedPoints,
+            'oc':overrideColor,
+            'oRGB':overrideRGBColors,
+            'ocRGB':overrideColorRGB
+            }
+    jsonString=json.dumps(curveData,sort_keys=True)
+    jsonString=jsonString.replace('},','},\n')
+
+    with open(filePath,'w') as outfile:  
+        outfile.write(jsonString)
+
+def loadCtrlAppearance(filePath,search='',replace=''):
+    '''load a ctrl appearance file into the current scene. Ctrls found by name.
+    search and replace are optional arguments to search/replace ctrl names before loading'''
+    if not os.path.exists(filePath):
+        raise IOError('ctrl appearance file not found:%s'%filePath)
+    with open(filePath) as ctrlAppFile:
+        data=json.load(ctrlAppFile)
+        for ctrlName,ctrlData in data.iteritems():
+            if search:
+                ctrlName=ctrlName.replace(search,replace)
+            if not cmds.objExists(ctrlName):
+                continue
+            #made tmp ctrl, then swap shape over
+            pointData=ctrlData['p']
+            tmpCtrl=cmds.curve(d=1, p=pointData,k=range(len(pointData)))
+            copyCtrlShape(tmpCtrl,ctrlName)
+            cmds.delete(tmpCtrl)
+
+            cmds.setAttr(ctrlName+'.overrideColor',ctrlData['oc'])
+            cmds.setAttr(ctrlName+'.overrideRGBColors',ctrlData['oRGB'])
+            cmds.setAttr(ctrlName+'.overrideColorRGB',*ctrlData['ocRGB'])
+
+    
 def makeCube(size=1.0,**kwargs):
     '''Make a nurbs curve cube with given size.'''
     wd=0.5*size
