@@ -28,6 +28,7 @@ OBJSET = 'SET'                     #name suffixes for ctrl object sets on limbs
 CTRLSET = 'CTRLS'
 CTRLSETFK = 'CTRLSFK'
 CTRLSETIK = 'CTRLSIK'
+ALLCTRLSET = 'ALLCTRLS'
 FKIKBLENDATTR = 'FKIK'              #any attr that blends IK/FK 
 CACHEATTR = 'mpCache'                 #attr name used to flag objects for caching
 

@@ -173,6 +173,7 @@ class Rig(object):
 
         #Add object sets used for animation tools
         self.addLimbSets()
+        self.addAllCtrlSet()
 
         #lock and cleanup
         self.lock()
@@ -378,6 +379,18 @@ class Rig(object):
                 ctrlSet = cmds.sets(em=True,n=limb.limbNode+'_'+mpName.CTRLSET)  
                 cmds.sets(ctrlSet,add=limbSet)
                 cmds.sets(ctrls,add=ctrlSet)
+
+    def addAllCtrlSet(self):
+        '''create a set with all ctrl, called when limb building is done'''
+        allCtrls=[]
+        for limb in self.limbs:
+            allNodes = cmds.listRelatives(limb.limbNode,ad=True)
+            for node in allNodes:
+                if mpCtrl.isCtrl(node):
+                    allCtrls.append(node)
+        self.ctrlSet=cmds.sets(em=True,n=self.rigNode+'_'+mpName.ALLCTRLSET)
+        cmds.sets(self.ctrlSet,add=self.masterSet) 
+        cmds.sets(allCtrls,add=self.ctrlSet)
                 
         
     def addLimb(self,limbObj):
