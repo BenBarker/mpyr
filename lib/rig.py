@@ -73,7 +73,7 @@ def getCtrlSet(ctrlName):
         #if the current set is ctrlsIK or ctrlsFK set, walk up one
         if objSet.endswith(name.CTRLSETFK) or objSet.endswith(name.CTRLSETIK):
             return cmds.listSets(object=objSet)[0]
-        elif objSet.endswith(name.CTRLSET):
+        elif objSet.endswith(name.SEP+name.CTRLSET):
             return objSet
     return None
 
@@ -84,7 +84,7 @@ def getCtrlSetFK(ctrlName):
     ctrlSet = getCtrlSet(ctrlName)
     contents = cmds.sets(ctrlSet,q=True)
     for objset in contents:
-        if objset.endswith(name.CTRLSETFK):
+        if objset.endswith(name.SEP+name.CTRLSETFK):
             return objset
     return None
 
@@ -95,7 +95,7 @@ def getCtrlSetIK(ctrlName):
     ctrlSet = getCtrlSet(ctrlName)
     contents = cmds.sets(ctrlSet,q=True)
     for objset in contents:
-        if objset.endswith(name.CTRLSETIK):
+        if objset.endswith(name.SEP+name.CTRLSETIK):
             return objset
     return None
 
