@@ -4,10 +4,12 @@ import math
 import os
 import json
 import maya.cmds as cmds
+import maya.mel as mel
 import attr
 import name
 import fileIO
 import rigmath
+import rig
 
 def addCtrl(ctrlname,shape='sphere',size=1.0,segments=13,parent=None,color=None,shapeXform=None,xform=None):
     '''make a ctrl with a given shape out of a curve, parented under a zero null
@@ -107,6 +109,36 @@ def copyCtrlShape(src,dst):
     cmds.connectAttr(src+".worldSpace",dst+".create",force=True)
     cmds.delete(cmds.cluster(dst)) #force update of crv shape
     cmds.disconnectAttr(src+".worldSpace",dst+".create")
+
+def mirrorCtrlShape(src,dst=None):
+    '''given a source curve, copy it's mirror shape to dst.
+    If not dst is given then use rig library to find mirrored ctrl.'''
+    #find mirrored ctrl
+    if not dst:
+        dst=rig.findMirrorCtrl(src)
+    if not dst:
+        raise RuntimeError("could not find mirror ctrl. Specify with 'dst' arg")
+
+    #find mirror info
+    mirrorInfo=rig.getMirrorInfo(dst)
+    if not mirrorInfo:
+        mel.warning('Mirror info not found on destination ctrl, using -1 -1 -1')
+        mirrorInfo=(-1,-1,-1)
+
+    #duplicate the mirrored ctrl
+    tmpCtrl=cmds.curve(d=1,p=((0,0,0),(0,1,0)),k=(0,1),n='tmpCtrl')
+    cmds.xform(tmpCtrl,ws=True,m=cmds.xform(dst,ws=True,m=True,q=True))
+    copyCtrlShape(src,tmpCtrl)
+
+    #create cluster and flip
+    tmpCluster=cmds.cluster(tmpCtrl,n='tmpCluster')
+    cmds.xform(tmpCluster,p=True,ws=True,sp=cmds.xform(dst,ws=True,q=True,t=True))
+    cmds.scale(mirrorInfo[0],mirrorInfo[1],mirrorInfo[2],tmpCluster)
+    cmds.delete(tmpCtrl,ch=True)
+    
+    # copy and delete tmp object
+    copyCtrlShape(tmpCtrl,dst)
+    cmds.delete(tmpCtrl)
 
 def getCurve(shape,size=1.0,segments=13):
     '''given a shape name return the corresponding curve.
