@@ -10,6 +10,8 @@ import mpyr.lib.rig as mpRig
 import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.fileIO as mpFile
 
+reload(mpCtrl)
+
 class SaveLoadCtrlShape(object):
     '''UI to save/load/mirror/etc ctrl shapes. Wrapper for functions in lib/ctrl.py'''
     def __init__(self):
@@ -32,7 +34,7 @@ class SaveLoadCtrlShape(object):
             text=self.directory,
             buttonLabel='...',
             pht='path to ctrl appearance .json',
-            cc=self.replaceSlashes,
+            cc=self.filePathChangeCallback,
             bc=self.pickFile,
             p=mainLayout)
         self.widgets['saveAllBut']=cmds.button(label='Save To File',p=mainLayout,command=self.saveFile)
@@ -77,10 +79,9 @@ class SaveLoadCtrlShape(object):
             cap='Path to save/load ctrl appearance',
             dialogStyle=2,          #standard across all OSes
             fm=0,                   #ok if file doesn't exist
-            dir=self.directory)
-        pickerReturn=self.replaceSlashes(pickerReturn)
-        #set the path
+            dir=self.directory)[0]
         cmds.textFieldButtonGrp(self.widgets['filePath'],e=True,text=pickerReturn)
+        self.filePathChangeCallback()
 
     def leftColor(self,*args,**kwargs):
         sel = cmds.ls(sl=True)
@@ -144,12 +145,15 @@ class SaveLoadCtrlShape(object):
         fullPath = os.path.join(path,fileName)
         return fullPath
 
-    def replaceSlashes(self,*args,**kwargs):
-        '''Change path to unix style slashes. Maya can handle both so just easier to use Unix'''
+    def filePathChangeCallback(self,*args,**kwargs):
+        '''Change path to unix style slashes. Maya can handle both so just easier to use Unix.
+        Also saves the optionVar for the path'''
         pathValue=cmds.textFieldButtonGrp(self.widgets['filePath'],q=True,text=True)
         pathValue=pathValue.replace('\\','/')
         cmds.textFieldButtonGrp(self.widgets['filePath'],e=True,text=pathValue)
         self.directory=pathValue
+        cmds.optionVar(sv=('Mpyr_SaveLoadCtrlShape_DefaultDir', self.directory))
+        return pathValue
 
     def saveFile(self,*args,**kwargs):
         path=self.directory
@@ -167,7 +171,6 @@ class SaveLoadCtrlShape(object):
         if confirm=='Yes':
             mpFile.ensurePath(directory,force=True)
             mpCtrl.saveCtrlAppearance(sel,path,force=True)
-            cmds.optionVar(sv=('Mpyr_SaveLoadCtrlShape_DefaultDir', self.directory))
 
     def loadFile(self,*args,**kwargs):
         path=self.directory

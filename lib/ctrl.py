@@ -186,6 +186,7 @@ def saveCtrlAppearance(ctrlList,filePath,force=True,search='',replace=''):
 
     curveData=dict()
     for ctrl in ctrlList:
+        ctrlName=ctrl
         if search and replace:
             ctrlName = ctrl.replace(search,replace)
         #get shape node
@@ -241,7 +242,7 @@ def copyCtrlShape(src,dst):
     if cmds.nodeType(dst)=='transform':
         dst = cmds.listRelatives(dst,s=True)[0]
     cmds.connectAttr(src+".worldSpace",dst+".create",force=True)
-    cmds.delete(cmds.cluster(dst)) #force update of crv shape
+    cmds.xform(dst+".cv[0]",q=True,ws=True,t=True)#update attribute
     cmds.disconnectAttr(src+".worldSpace",dst+".create")
 
 def mirrorCtrlShape(src,dst=None):
