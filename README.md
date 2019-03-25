@@ -62,4 +62,11 @@ import mpyr.tools.jointTools as jt
 jt.JointOrientTool()
 ```
 
+To save/load/edit the appearance of controls:
+```python
+import mpyr.tools.ctrlShape as cs
+reload(cs)
+cs.SaveLoadCtrlShape()
+```
+
 A shelf or more convenient way to launch rig builds and tools is planned in a future version.
