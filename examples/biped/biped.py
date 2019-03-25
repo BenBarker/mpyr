@@ -6,10 +6,11 @@ import mpyr.rig.limb.generic as generic
 import mpyr.rig.limb.leg as legs
 import mpyr.rig.limb.spine as spines
 import mpyr.lib.deformer as libDef
+import mpyr.lib.ctrl as libCtrl
 
 import logging
 rigLog = logging.getLogger('rig')
-rigLog.setLevel(logging.DEBUG)
+rigLog.setLevel(logging.INFO)
 
 class Rig(mpRigBase.AnimRig):
     def __init__(self):
@@ -24,8 +25,10 @@ class Rig(mpRigBase.AnimRig):
         #Skeleton paths can be specified by user, convention, or database.
         #For this example I keep it next to the .py file, so I find based
         #on __file__
-        self.skeletonPath=os.path.join(os.path.split(__file__)[0],'bipedSkeleton.ma')
-        self.geoPath = os.path.join(os.path.split(__file__)[0],'heroMesh.ma')
+        rigPath=os.path.dirname(__file__)
+        self.skeletonPath=os.path.join(rigPath,'bipedSkeleton.ma')
+        self.geoPath = os.path.join(rigPath,'heroMesh.ma')
+        self.ctrlPath = os.path.join(rigPath,'ctrls.json')
         
     def build(self):
         self.importSkeleton()
@@ -95,3 +98,5 @@ class Rig(mpRigBase.AnimRig):
         handL > 'Arm_L_03'
         handR > 'Arm_R_03'
         head > 'Spine_04'
+
+        libCtrl.loadCtrlAppearance(self.ctrlPath)
