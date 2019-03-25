@@ -51,21 +51,18 @@ rig.create()
 ```
 This will build the animation rig. The script, mesh, and skin weights for this example are all found in the examples/biped directory. The main rig code is in the biped.py file, which is the best example of what mpyr build scripts look like.
 
-Some general tools are also available in the /tools directory. To launch the rig tools (snap, reset, etc) run:
+Some general tools are also available in the /tools directory.
 ```python
+#To launch the rig tools (snap, reset, etc) run:
 import mpyr.tools.rigTools as rt
 rt.RigTools()
-```
-And to run the joint orient tool:
-```python
+
+#To run the joint orient tool:
 import mpyr.tools.jointTools as jt
 jt.JointOrientTool()
-```
 
-To save/load/edit the appearance of controls:
-```python
+#To save/load/edit the appearance of controls:
 import mpyr.tools.ctrlShape as cs
-reload(cs)
 cs.SaveLoadCtrlShape()
 ```
 
