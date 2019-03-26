@@ -25,7 +25,7 @@ class SaveLoadCtrlShape(object):
         self.showWindow()
     
     def showWindow(self):
-        window = cmds.window(title='Rig Tools',width=500)
+        window = cmds.window(title='Ctrl Appearance Tools',width=500)
         mainLayout=cmds.columnLayout(adj=True)
         #Other Widgets
         self.widgets['filePath']=cmds.textFieldButtonGrp(label='File:',
