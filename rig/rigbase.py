@@ -191,7 +191,7 @@ class Rig(object):
         '''
         if not self.rigName:
             default = self.__class__.__name__
-            rigLog.debug('rig name not set, using default class name %s' % default)
+            rigLog.warning('rig name not set, using default class name %s' % default)
             self.rigName = default
         
     def addRigNode(self):
