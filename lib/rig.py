@@ -77,6 +77,15 @@ def getCtrlSet(ctrlName):
             return objSet
     return None
 
+def getAllCtrlSet(ctrlName):
+    '''given a ctrl return the set that contains all ctrls.
+    This is a set under the master set with every rig ctrl.'''
+    currentSets = cmds.listSets(object=ctrlName)
+    for objSet in currentSets:
+        if objSet.endswith(name.SEP+name.ALLCTRLSET):
+            return objSet
+    return None
+
 def getCtrlSetFK(ctrlName):
     '''given a ctrl, return the FK ctrl object set. A more specific version
     of getCtrlSet
@@ -111,7 +120,14 @@ def getLimbCtrls(ctrlName):
             if ctrl.isCtrl(obj):
                 ctrls.append(obj)
     return ctrls
-    
+
+def getAllCtrls(ctrlName):
+    '''given a ctrl return list of all ctrls in the rig'''
+    allCtrlSet = getAllCtrlSet(ctrlName)
+    if not allCtrlSet:
+        raise RuntimeError("Rig all ctrls set not found, check ctrl set names")
+    return cmds.sets(allCtrlSet,q=True)
+
 def getJointFromCtrl(ctrlName):
     '''given a ctrl find the joint it is driving, attempts to look through constraints'''
     #put nodeTypes and their output attrs here
@@ -427,25 +443,39 @@ def keyCtrl(ctrlName):
     
 def keyLimb(ctrlName):
     '''given a ctrl key the entire limb'''
+    doneNodes=[]
     for kctrl in getLimbCtrls(ctrlName):
-        keyCtrl(kctrl)
+        if kctrl not in doneNodes:
+            keyCtrl(kctrl)
+        limbShape = getLimbNodeShape(kctrl)
+        if limbShape in doneNodes:
+            for attr in cmds.listAttr(limbShape,k=True,ud=True) or []:
+             cmds.setKeyframe('%s.%s'%(limbShape,attr))
+        doneNodes.append(kctrl)
+        doneNodes.append(limbShape)
         
 def keySelectedLimb():
     '''key every limb involved in the current selection'''
+    doneLimbs=[]
     for ctrlName in getSelectedCtrls():
-        keyLimb(ctrlName)
+        limbNode = getLimbNode(ctrlName)
+        if limbNode not in doneLimbs:
+            keyLimb(ctrlName)
+        doneLimbs.append(limbNode)
         
 def keySelectedCharacter():
     '''key every ctrl on every character involved in the current selection'''
-    alreadyDoneChars = []
-    for ctrlName in getSelectedCtrls():
-        charName = getCharacter(ctrlName)
-        if charName in alreadyDoneChars:
-            continue
-        alreadyDoneChars.append(charName)
-        allCtrlsInChar = getAllCtrlsByParent(charName)
-        for charCtrl in allCtrlsInChar:
-            keyCtrl(charCtrl)
+    ctrls = getSelectedCtrls()
+    if not ctrls:
+        return
+    limbNodes=[]
+    for ctrl in getAllCtrls(ctrls[0]):
+        cmds.setKeyframe(ctrl,hierarchy='none',shape=0)
+        limbNodes.append(getLimbNodeShape(ctrl))
+    limbNodes=set(limbNodes) #remove duplicates
+    for limb in limbNodes:
+        for attr in cmds.listAttr(limb,k=True,ud=True) or []:
+            cmds.setKeyframe('%s.%s'%(limb,attr))
 
 def getAimVector(start,mid,end,distance=0.5):
     '''Given three points (like shoulder,elbow,wrist joints) compute vector for aim

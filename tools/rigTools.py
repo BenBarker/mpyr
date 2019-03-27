@@ -25,6 +25,9 @@ class RigTools(object):
         cmds.text('Snap')
         cmds.button(label='Snap FK->IK',width=500,command=self.snapFKIK)
         cmds.button(label='Snap IK->FK',width=500,command=self.snapIKFK)
+        cmds.text('Key')
+        cmds.button(label='Key Selected Limb',width=500,command=self.keyLimb)
+        cmds.button(label='Key Entire Character',width=500,command=self.keyCharacter)
         cmds.showWindow(window)
 
     def resetSelected(self,*args,**kwargs):
@@ -59,6 +62,14 @@ class RigTools(object):
     def snapIKFK(self,*args,**kwargs):
         mpRig.snapIKFK(self.getSelection()[0])
 
+    def keyLimb(self,*args,**kwargs):
+        self.getSelection()
+        mpRig.keySelectedLimb()
+
+    def keyCharacter(self,*args,**kwargs):
+        self.getSelection()
+        mpRig.keySelectedCharacter()
+        
     def getSelection(self):
         sel = cmds.ls(sl=True)
         if not sel:
