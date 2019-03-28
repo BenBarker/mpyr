@@ -52,6 +52,13 @@ rig.create()
 This will build the animation rig. The script, mesh, and skin weights for this example are all found in the examples/biped directory. The main rig code is in the biped.py file, which is the best example of what mpyr build scripts look like.
 
 Some general tools are also available in the /tools directory.
+A shelf to launch these tools can be added to Maya by running:
+```python
+import mpyr.tools.shelf
+```
+
+To launch tools individually they can be called on their own:
+
 ```python
 #To launch the rig tools (snap, reset, etc) run:
 import mpyr.tools.rigTools as rt
@@ -66,4 +73,3 @@ import mpyr.tools.ctrlShape as cs
 cs.SaveLoadCtrlShape()
 ```
 
-A shelf or more convenient way to launch rig builds and tools is planned in a future version.
