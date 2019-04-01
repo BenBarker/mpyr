@@ -32,6 +32,9 @@ class WorldOffset(limbBase.Limb):
         
         ctrlXform.scale(0.7)
         zero, c3 = self.addCtrl('03',type='FK',shape='pyramid',parent=c2,shapeXform=ctrlXform)
+
+        mpRig.addPickParent(c3,c2)
+        mpRig.addPickParent(c2,c1)
         
 class FKOffset(limbBase.Limb):
     '''simple offset control. One control driving one joint.
