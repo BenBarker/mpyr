@@ -136,8 +136,8 @@ def getJointFromCtrl(ctrlName):
         'orientConstraint':['crx','cry','crz'],
         'parentConstraint':['ctx','cty','ctz','crx','cry','crz']
         }
-    for attr in ('t','r'):
-        for axis in ('','x','y','z'):
+    for attr in ('tr'):
+        for axis in (' xyz'):
             connections = cmds.listConnections('%s.%s%s'%(ctrlName,attr,axis),s=0,d=1) or []
             for connection in connections:
                 #test direct connection
@@ -154,11 +154,37 @@ def getJointFromCtrl(ctrlName):
                 except KeyError:
                     continue
     return None
-    
+
+def getCtrlFromJoint(jointName):
+    '''given a joint find the ctrl it is driving, attempts to look through constraints'''
+    cnsAttrs = {
+        'pointConstraint':['tg[0].tt'],
+        'orientConstraint':['tg[0].tr'],
+        'parentConstraint':['tg[0].tr','tg[0].tt']
+        }
+    for attr in ('tr'):
+        for axis in (' xyz'):
+            connections = cmds.listConnections('%s.%s%s'%(jointName,attr,axis),s=1,d=0) or []
+            for connection in connections:
+                #test direct connection
+                if cmds.nodeType(connection) == 'transform':
+                    return connection
+                #test other nodes
+                try:
+                    for output in cnsAttrs[cmds.nodeType(connection)]:
+                        drivenObj = cmds.listConnections(connection+'.'+output, s=1,d=0)
+                        if not drivenObj:
+                            continue
+                        elif cmds.nodeType(drivenObj[0]) == 'transform':
+                            return drivenObj[0]
+                except KeyError:
+                    continue
+    return None
+
 def resetCtrl(ctrlName):
     '''reset the given ctrl'''
-    for attr in ('s','r','t'):
-        for axis in ('x','y','z'):
+    for attr in ('srt'):
+        for axis in ('xyz'):
             dv = 0.0
             if attr == 's':
                 dv = 1.0
@@ -497,7 +523,6 @@ def getAimVector(start,mid,end,distance=0.5):
 
     #throw error if the chain isn't bent. Snapping becomes unpredictable.
     #This might still need to be lowered.
-    print(abs(chainV.dot(upperV)))
     if abs(chainV.dot(upperV)) > 0.998:
         raise RuntimeError("Cannot calculate aim, is chain hyper extended?")
 

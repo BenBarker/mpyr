@@ -158,6 +158,8 @@ def isCtrl(obj):
     '''Return True or False if given object is a ctrl.
     Checks for a boolean attribute that is created by addCtrl
     '''
+    if not obj:
+        return False
     return cmds.objExists(obj+".isCtrl")
 
 def getMayaColor(color):

@@ -43,21 +43,30 @@ class Limb(object):
     Limbs are used inside a build script, by instancing them and then passing them
     to the rig's addLimb() method.
 
-    Attrs:
+    Attributes:
+    Most of these will be 'None' when limb is initialized and only populated after a limb
+    is built unless otherwise noted.
     - name: the limb's name object. TDs usually set the 'part' and 'loc' in the build
             script, but they are initialized to 'Limb' and 'M'.
     - startJoint: the first (possibly only) joint driven by the limb. Set by the
                   TD in the rig build script.
     - endJoint: the last joint driven by a limb, which when taken with startJoint
-                may form a chain. May be optional.
-    - rig: the rig object this limb is being built under. Set when called 
-           with 'addLimb' by a rig object.
+                may form a chain. May be optional. Set in build script.
+    - startCtrl: The first ctrl of the limb. If not set explicitly will be set to ctrl
+                 driving the startJoint, failing that the first ctrl made. Used when
+                 setting up pickwalk between limbs.
+    - endCtrl: The last ctrl of the limb. If not set explicitly will be set to ctrl
+               driving the endJoint, failing that the last ctrl made. Used when
+               setting up pickwalk between limbs.
+    - rig: the rig object this limb is being built under. This is set when the limb is 
+           built via calling 'addLimb' by a rig object during a build script.
     - limbNode: the top level transform node of the limb. Set when the limb begins
                 building, and used frequently internally to parent things under the limb.
     - noXform: a group made under the limbNode that has 'inheritsTransform' off. Set
                when the limb begins, it gives a usefull place to keep nodes that 
                shouldn't move or be touched by animators.
-    - ctrls: a list of all ctrls made during limb build.
+    - ctrls: a list of all ctrls made during limb build. Ctrls are added by the addCtrl
+             method.
     - pinParent: a transform that is constrained to other objects to drive
                  the limb's local space. Almost all limbs have a pinParent. 
                  It is created when the limb calls addPinParent, and gets 
@@ -77,6 +86,9 @@ class Limb(object):
         
         self.startJoint = None
         self.endJoint = None
+
+        self.startCtrl = None
+        self.endCtrl = None
         
         self.rig = None
         self.limbNode = None
@@ -91,11 +103,42 @@ class Limb(object):
         
     def __gt__(self,other):
         '''Override greater than (>) to do pinParent constraining'''
-        rigLog.info('wiring %s pinParent to %s'%(self,other))
-        if self.pinParent and cmds.objExists(self.pinParent):
-            cmds.parentConstraint(other,self.pinParent,mo=True)
+        rigLog.info('wiring %s'%(self))
+        #Check pinParent
+        if not self.pinParent or not cmds.objExists(self.pinParent):
+            raise RuntimeError('Cannot wire, .pinParent not found on limb %s'%self)
+        
+        #If 'other' is a limb, find endJoint or fallback to startJoint:
+        drivingNode=other
+        if isinstance(other,Limb):
+            if hasattr(other,'endJoint'):
+                drivingNode=other.endJoint
+            elif hasAttr(other,startJoint):
+                drivingNode=other.startJoint
+            rigLog.debug('wiring found driver %s'%(drivingNode))
+        #if that didn't work, see if 'other' is just a node:
+        if cmds.objExists(drivingNode):
+                rigLog.debug('wiring limb to %s'%(drivingNode))
+                cmds.parentConstraint(drivingNode,self.pinParent,mo=True)
+
+        #Try and setup pickwalk across limbs
+        #If other is a limb use its 'endCtrl'
+        if isinstance(other,Limb):
+            if self.startCtrl and other.endCtrl:
+                rigLog.debug('wiring pickParent from %s to %s'%(self.startCtrl,other.endCtrl))
+                mpRig.addPickParent(self.startCtrl,other.endCtrl)
+        #Otherwise grab whatever is driving 'other' and see if it's a ctrl
+        elif cmds.objExists(other):
+            endCtrl=mpRig.getCtrlFromJoint(other)
+            print 'endCtrl:',endCtrl
+            if mpCtrl.isCtrl(endCtrl):
+                rigLog.debug('wiring pickParent from %s to %s'%(self.startCtrl,endCtrl))
+                mpRig.addPickParent(self.startCtrl,endCtrl)
+            else:
+                rigLog.debug('wiring could not find pickParent on %s, skipping'%other)
         else:
-            raise RuntimeError('Cannot constrain, .pinParent not found on limb obj')
+            rigLog.debug('wiring found no pickParent to connect from %s to %s'%(self,other))
+
             
     def __rshift__(self,other):
         '''Override rshift (>>) to do pinWorld constraining'''
@@ -175,6 +218,7 @@ class Limb(object):
         '''Runs at end of limb creation'''
         self.instanceLimbNodeShape()
         mpAttr.visOveride(self.noXform,0)
+        self.setStartEndCtrls()
         
     def build(self):
         raise NotImplementedError('You must implement a "build" method in your Limb class')
@@ -481,6 +525,37 @@ class Limb(object):
 
         return newLimb
 
-
-        
+    def setStartEndCtrls(self):
+        '''sets the startCtrl and endCtrl properties if they have not already been set.
+        These properties are used to hook up pickwalk between limbs. If the limb author
+        did not set these attributes this method attempts to guess, first by looking at
+        what drives the start and end joints, then simply using the first and last members
+        of the .ctrls list.'''
+        rigLog.info('checking %s startCtrl and endCtrl'%self)
+        #If this is already set then return
+        if self.startCtrl and self.endCtrls:
+            rigLog.debug('startCtrl and endCtrl already set')
+            return
+        #Check ctrls to see if they drive start and end joints:
+        for ctrl in self.ctrls:
+            joint=mpRig.getJointFromCtrl(ctrl)
+            #This can fail with exotic ctrl->joint connections, so if that's the case
+            #then bail. Only checking straightforward connections (FK ctrls mostly)
+            if not joint: 
+                continue
+            if not self.startCtrl:
+                if joint==self.startJoint:
+                    self.startCtrl=ctrl
+                    rigLog.debug('startCtrl set to %s'%ctrl)
+            if not self.endCtrl:
+                if joint==self.endJoint:
+                    self.endCtrl=ctrl
+                    rigLog.debug('endCtrl set to %s'%ctrl)
+        #fallback, simply use first and last ctrls
+        if not self.startCtrl:
+            self.startCtrl=self.ctrls[0]
+            rigLog.debug('startCtrl fallback to %s'%self.ctrls[0])
+        if not self.endCtrl:
+            self.endCtrl=self.ctrls[-1]
+            rigLog.debug('endCtrl fallback to %s'%self.ctrls[-1])   
         
