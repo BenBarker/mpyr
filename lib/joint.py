@@ -64,6 +64,18 @@ def getDownAxis(joint):
     for axis in (thisXform.xAxis(),thisXform.yAxis(),thisXform.zAxis()):
         dots.append(abs(diff.dot(axis)))
     return axes[dots.index(max(dots))]
+
+def getChainLength(startJoint,endJoint):
+    '''given a start and end joint return the length of the chain.'''
+    joints=getJointList(startJoint,endJoint)
+    distance=0.0
+    for idx,joint in enumerate(joints):
+        if idx==0:
+            continue
+        par=rigmath.Vector(joints[idx-1])
+        cur=rigmath.Vector(joint)
+        distance+=(par-cur).length()
+    return distance
     
 def getEndJoint(startJoint):
     '''return the lowest end joint of a given startJoint. Quits at a branch.'''
