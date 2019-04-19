@@ -33,7 +33,37 @@ def getJointList(startJoint,endJoint):
     jointList = parList[startIndex:]
     jointList.append(endJoint)
     return jointList
-    
+
+def getLongAxis(joint):
+    '''given a joint return the axis ('x','y', or 'z') with the largest translate value.
+    On oriented joints this will be the "down" axis of the joint as well'''
+    axes='xyz'
+    translates=[abs(x) for x in cmds.getAttr(joint+'.t')[0]]
+    return axes[translates.index(max(translates))]
+
+def getDownAxis(joint):
+    '''given a joint return the axis ('x','y', or 'z') that points towards child.
+    On oriented joints this will be the same as the long axis, but if orientation is
+    not know this function is slower but still produces an accurate result. 
+    Joints at the end of the chain will use their parent instead to determine downAxis. 
+    Negative axes aren't specified, function just returns x y or z.'''
+    axes='xyz'
+    target = cmds.listRelatives(joint,type='joint')
+    if not target:
+        target = cmds.listRelatives(joint,p=True,type='joint')  
+    if not target:
+        raise RuntimeError("no child or parent joints on %s, cannot determine downAxis"%joint)
+    thisVector=rigmath.Vector(joint)
+    thisXform=rigmath.Transform(joint)
+    targVector=rigmath.Vector(target[0])
+    diff=thisVector-targVector
+    diff.normalize()
+
+    #compare alignment of local axes of transform to diff vector
+    dots=[]
+    for axis in (thisXform.xAxis(),thisXform.yAxis(),thisXform.zAxis()):
+        dots.append(abs(diff.dot(axis)))
+    return axes[dots.index(max(dots))]
     
 def getEndJoint(startJoint):
     '''return the lowest end joint of a given startJoint. Quits at a branch.'''
