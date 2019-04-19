@@ -34,7 +34,7 @@ class SpineFK(limbBase.Limb):
         zero,fkCtrl = self.addCtrl('hips',type='FK',shape='box',parent=spineCtrls[0],xform=jointList[0])
         cmds.pointConstraint(fkCtrl,jointList[0],mo=True)
         cmds.orientConstraint(fkCtrl,jointList[0],mo=True) #every joint driven by ori cns
-        mpAttr.lockAndHide(fkCtrl,'t') 
+        #mpAttr.lockAndHide(fkCtrl,'t') 
         mpRig.addPickParent(spineCtrls[0],fkCtrl)
         mpAttr.unlockAndShow(spineCtrls[0],'t')
 
