@@ -2,6 +2,7 @@
 import maya.cmds as cmds
 import rigmath
 import dag
+reload(rigmath)
 
 def getTopJoint(node):
     '''given a node get the highest parent joint
@@ -110,48 +111,75 @@ def orientToRot(jnt):
     origTransform = rigmath.Transform(jnt)
     cmds.setAttr(jnt + '.jointOrient',0,0,0)
     cmds.xform(jnt,ws=True,m=origTransform.get())
+
+def createJointChain(vectorList,upVector=None,downAxis='x',upAxis='z',orient=True):
+    '''Create a joint chain using the given list of vectors (if objects are given their
+    world translate is used. If orient is True (the default) chain will be oriented.
+    UpVector can be a vector or object to orient joints (defaults to world Y). 
+    DownAxis and upAxis used to orient joint chain after creation. 
+    Returns list created joints.'''
+    joints=[]
+    for idx,vector in enumerate(vectorList):
+        vector=rigmath.Vector(vector) #cast to Vector to convert tuples, object names, etc
+        cmds.select(cl=True) #required to prevent Maya parenting joints automatically
+        newJoint=cmds.joint(p=vector.get())
+        if idx>0:
+            cmds.parent(newJoint,joints[idx-1])
+        joints.append(newJoint)
+    if orient:    
+        for joint in joints:
+            orientJoint(joint,upVector=upVector,downAxis=downAxis,upAxis=upAxis)
     
-    
-def orientJoint(joint,upObj=None,downAxis='x',upAxis='z'):
+def orientJoint(joint,upVector=None,downAxis='x',upAxis='z'):
     '''orient a given joint. 
     Joint will point at it's child or -1 it's parent if no child or many children.
-    UpAxis will be pointed at the upObj (which can also be a Vector), or if none then
-    world up.
+    UpAxis will be pointed at the upVector (which can also be a node), or if none then
+    world Y up. Axis arguments can be positive ('x',etc) or negative ('-z').
     '''
-    if not upObj:
-        upObj = rigmath.Vector(0,1e10,0)
+    if not upVector:
+        upVector = rigmath.Vector(0,1e10,0)
     else:
-        upObj = rigmath.Vector(upObj)
+        upVector = rigmath.Vector(upVector)
         
+    #Find parents and children of joint
+    #if it has no children it's the end of a chain, simply zero out
     par = cmds.listRelatives(joint,p=True,type='joint')
     children = cmds.listRelatives(joint,type='joint')
-    if not par or not children or len(children) > 1:
-        print 'end joint'
+    if not children or len(children) > 1:
         cmds.setAttr(joint + ".jointOrient",0,0,0)
         cmds.setAttr(joint + ".rotate",0,0,0)
         return
-    par = par[0]
-    fosterPar = cmds.group(em=True,n='TEMPPAR',p=par)
+    #If it has children then create a tmp node to hold them
+    fosterPar = cmds.group(em=True,n='TEMPPAR')
+    if par:
+        cmds.parent(fosterPar,par[0])
+        cmds.xform(fosterPar,ws=True,m=cmds.xform(par,q=True,ws=True,m=True))
+    else:
+        cmds.xform(fosterPar,ws=True,m=cmds.xform(joint,q=True,ws=True,m=True))
+
+    #create nodes to aim at and use as up object
     aimTarget = cmds.group(em=True,n='TEMPCHILD',p=fosterPar)
     upTarget = cmds.group(em=True,n='TEMPAIM')
-    cmds.xform(fosterPar,ws=True,m=cmds.xform(par,q=True,ws=True,m=True))
     cmds.xform(aimTarget,ws=True,m=cmds.xform(children[0],q=True,ws=True,m=True))
     cmds.parent(children,fosterPar)
     
-    
+    #zero joint's orient
     cmds.setAttr(joint + ".jointOrient",0,0,0)
 
-    aimCns = cmds.aimConstraint(aimTarget,joint,
-        aimVector = (1,0,0),
-        upVector = (0,1,0),
-        worldUpType = 'object',
-        worldUpObject = upTarget,
-        maintainOffset=False
-        )[0]
+    #parse axis arguments
+    downVector=rigmath.Vector(downAxis)
+    aimUpVector=rigmath.Vector(upAxis)
+    aimCns=cmds.aimConstraint(aimTarget,joint,
+                offset=(0,0,0),
+                aimVector=downVector.get(),
+                upVector=aimUpVector.get(),
+                worldUpType='object',
+                worldUpObject=upTarget
+    )[0]
     #would prefer to use upVector instead of upObj, but doesn't seem to be updating?
-    cmds.move(upObj.x,upObj.y,upObj.z,upTarget) 
-        
-    cmds.parent(children,joint)
-    cmds.delete([fosterPar,aimTarget,aimTarget,aimCns])
+    cmds.move(upVector[0],upVector[1],upVector[2],upTarget)
     rotToOrient(joint)
+    cmds.parent(children,joint)
+    cmds.delete([fosterPar,aimTarget,aimTarget,aimCns,upTarget])
+    
     
