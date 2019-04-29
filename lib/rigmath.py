@@ -223,6 +223,16 @@ class Transform(object):
         self._matrix[8],self._matrix[9],self._matrix[10],self._matrix[11],
         self._matrix[12],self._matrix[13],self._matrix[14],self._matrix[15],
         )
+
+    def __getitem__(self,idx):
+        if idx>len(self)-1:
+            raise IndexError('index on Transform out of range')
+        return self._matrix[idx]
+
+    def __setitem__(self,idx,val):
+        if idx>len(self)-1:
+            raise IndexError('index on Transform out of range')
+        self._matrix[idx]=float(val)
         
     def copy(self):
         '''return a copy of this transform as a new Transform'''
