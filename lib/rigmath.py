@@ -37,6 +37,17 @@ class Vector(object):
             self.set(*args)
         else:
             self.zero()
+
+    def __getitem__(self,idx):
+        if idx>len(self)-1:
+            raise IndexError('index on Vector out of range')
+        return self.get()[idx]
+
+    def __setitem__(self,idx,val):
+        if idx>len(self)-1:
+            raise IndexError('index on Vector out of range')
+        attrs=[self.x,self.y,self.z]
+        args[idx]=float(val)
             
     def __repr__(self):
         return 'Vector(%.3f,%.3f,%.3f)'%(self.x,self.y,self.z)
@@ -61,7 +72,9 @@ class Vector(object):
                 self.setFromList(args[0])
             elif isinstance(args[0], (int, long, float)):
                 self.setFromScalar(args[0])
-            elif cmds and cmds.objExists(args[0]):
+            elif args[0][-1] in 'xyz':
+                self.setFromAxisName(args[0])
+            elif cmds and cmds.objExists(args[0]): #check 'if cmds' because we may not be in Maya
                 self.setFromObj(args[0])
             else:
                 raise RuntimeError("Could not create vector from args: %s" % args)
@@ -94,6 +107,16 @@ class Vector(object):
         if not cmds:
             raise RuntimeError("Maya.cmds not found. This method can only be used inside Maya")
         self.x,self.y,self.z = cmds.xform(obj,ws=True,q=True,t=True)
+
+    def setFromAxisName(self,axis='x'):
+        '''Set from a given axis name. Alse accepts negative names ('-x' for example)'''
+        axisMap={'x':[1,0,0],'y':[0,1,0],'z':[0,0,1]}
+        negative=False
+        axis=axis.lower()
+        vectorValues=axisMap[axis[-1]]
+        if axis[0]=='-':
+            vectorValues=[val*-1 for val in vectorValues]
+        self.setFromList(vectorValues)
     
     def get(self):
         '''return list of this vector's xyz coords'''
