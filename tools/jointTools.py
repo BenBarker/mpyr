@@ -1,5 +1,6 @@
 '''Tools for joint orient workflow'''
 import maya.cmds as cmds
+import mpyr.lib.joint as mpJoint
 
 class JointOrientTool(object):
     def __init__(self):
@@ -74,7 +75,7 @@ class JointOrientTool(object):
             cl2=('center','center'),
             ct2=('both','both'),
             )
-        self.widgets['upAxis']=cmds.radioButtonGrp(numberOfRadioButtons=3,label='Up',
+        self.widgets['upAxis']=cmds.radioButtonGrp(numberOfRadioButtons=3,label='Up:    ',
             labelArray3=['X','Y','Z'],
             cw=((1,50),(2,50),(3,50),(4,100)),
             adj=1,
@@ -252,11 +253,24 @@ class JointOrientTool(object):
         if not cmds.objExists(upObject):
             raise RuntimeError("Up Object not found in scene")
 
+        #sometimes axis widget returns 0,1,or 2, sometimes str. So always convert to string
+        axisNames='xyz'
+        if isinstance(downAxis,int):
+            downAxis=axisNames[downAxis-1]
+        if isinstance(upAxis,int):
+            upAxis=axisNames[upAxis-1]
+        if downNeg:
+            downAxis='-'+downAxis
+        if upNeg:
+            upAxis='-'+upAxis
+
         #Gather joints in the chain
         sel=cmds.ls(sl=True)
         if not sel or not cmds.nodeType(sel[0])=='joint':
             raise RuntimeError("Please select a joint to orient")
+        #create list to hold joints
         jointList=[sel[0]]
+        #go through chain, stopping when there are no children or a branch
         while True:
             children = cmds.listRelatives(jointList[-1],children=True,type='joint') or []
             if len(children) != 1:
@@ -266,55 +280,18 @@ class JointOrientTool(object):
         if len(jointList)==1:
             raise RuntimeError("Only one joint in chain. Cannot orient a joint with no children, skipping.")
 
-        #Loop through chain
-        for idx,joint in enumerate(jointList):
-            #If this is the last joint zero the joint's orient and rotation
-            if idx+1==len(jointList):
-                cmds.setAttr(joint+'.jointOrient',0,0,0)
-                cmds.setAttr(joint+'.rotate',0,0,0)
-                break
-
-            #unparent children
-            children=cmds.listRelatives(joint,children=True) or []
-            tmpParent=cmds.group(em=True,n="tempParent")
-            cmds.parent(children,tmpParent)
-
+        for joint in jointList:
             #Before we do anything make sure joint rotate order is xyz. 
             #jointOrient is always xyz, so to combine them we need rotation order to be in the same order.
             rotOrder=cmds.xform(joint,q=True,roo=True)
             cmds.xform(joint,p=True,roo='xyz')
 
-            #If there is an existing joint orient, zero it
-            cmds.setAttr(joint+'.jointOrient',0,0,0)
-
-            #Make an aim cns to point the joint at it's child/up object
-            axisMap={1:[1,0,0],2:[0,1,0],3:[0,0,1]}
-            downVector=axisMap[downAxis]
-            if downNeg: 
-                downVector=[x*-1 for x in downVector]
-            upVector=axisMap[upAxis]
-            if upNeg: 
-                upVector=[x*-1 for x in upVector]
-            cns=cmds.aimConstraint(jointList[idx+1],joint,
-                        offset=(0,0,0),
-                        aimVector=downVector,
-                        upVector=upVector,
-                        worldUpType='object',
-                        worldUpObject=upObject
-            )
-            cmds.delete(cns)
-
-            #reparent children
-            children=cmds.listRelatives(tmpParent,children=True)
-            cmds.parent(children,joint)
-            cmds.delete(tmpParent)
-
-            #Get rotation and slap it into joint orient
-            rot=cmds.getAttr(joint+'.r')[0]
-            cmds.setAttr(joint+'.jointOrient',*rot)
-            cmds.setAttr(joint+'.r',0,0,0)
+            #orient
+            mpJoint.orientJoint(joint,upVector=upObject,downAxis=downAxis,upAxis=upAxis)
+            
             #restore rotation order
             cmds.xform(joint,p=True,roo=rotOrder)
+
         print("Joint orient complete")
 
 
