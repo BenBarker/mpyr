@@ -320,6 +320,8 @@ class Limb(object):
         limbShape = self.getLimbNodeShape()
         rigLog.debug('instancing limbNode shape %s under ctrls'%limbShape)
         for ctrl in self.ctrls:
+            if not mpCtrl.isCtrl(ctrl):
+                continue
             inst = cmds.instance(limbShape)
             instShape = cmds.listRelatives(inst,s=True)[0]
             cmds.parent('%s|%s'%(inst[0],instShape),ctrl,s=True,r=True)
