@@ -90,6 +90,16 @@ def getEndJoint(startJoint):
         startJoint = children[0]
         endJoint = startJoint
     return endJoint
+
+def getIKNodes(joint):
+    '''given a joint that is at the end of an ik chain, return the handle and effector.
+    Returns (effector,handle), raises RuntimeError if none found'''
+    try:
+        effector = cmds.listConnections(joint+'.tx',s=0,d=1)[0]
+        handle = cmds.listConnections(effector+'.handlePath[0]',s=0,d=1)[0]
+    except TypeError:
+        raise RuntimeError("No IK nodes found on joint %s" % joint)
+    return(effector,handle)
     
 def rotToOrient(jnt):
     '''copy rotation to orient, zeroes the joint basically'''

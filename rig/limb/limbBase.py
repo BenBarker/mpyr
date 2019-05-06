@@ -460,8 +460,7 @@ class Limb(object):
 
         #Construct the blend
         FKIKblender = self.addAttrLimb(ln=mpName.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
-        effector = cmds.listConnections(endJoint+'.tx',s=0,d=1)[0]
-        handle = cmds.listConnections(effector+'.handlePath[0]',s=0,d=1)[0]
+        effector,handle=mpJoint.getIKNodes(endJoint)
         cmds.connectAttr(FKIKblender, handle+'.ikBlend')
         cmds.connectAttr(FKIKblender, stubHandle+'.ikBlend')
 
