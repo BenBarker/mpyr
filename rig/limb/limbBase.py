@@ -349,23 +349,16 @@ class Limb(object):
             mpRig.addSnapParent(fkCtrl,joint) #for snapping FK to IK
         return fkCtrls
 
-    def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
-        '''Create a chain of FK ctrls with a blended IKRP solver. Requires three or more joints in chain.
+    def addIKChain(self,startJoint,endJoint,worldParent):
+        '''Create an IK RP solver on a chain with end and aim ctrls. Requires three or more joints in chain.
         Also creates a "stub" joint with an SC solver at the end of the chain, so that the last joint's
         rotation is blended between the IK end ctrl and the last FK ctrl properly.
-        - localParent = drives translation of FK chain always, rotation when local space is on. IK ignores.
-        - worldParent = drives rotation when 'world' space is blended on. Drives IK translate and rotate.
-        Returns list of [FkCtrl1,FKCtrl2,...,IKAim,IKEnd]
+        - worldParent = Drives IK translate and rotate.
+        Returns list of [IKAim,IKEnd] ctrls
         '''
         jointList = mpJoint.getJointList(startJoint,endJoint)
         if len(jointList)<3:
             raise RuntimeError('FKIKChain needs at least three joints')
-        fkCtrls = self.addFKChain(startJoint,endJoint,localParent)
-
-        #constrain fk ctrls to local/world
-        firstFKZero = cmds.listRelatives(fkCtrls[0],p=True)[0]
-        cmds.parentConstraint(localParent,firstFKZero,mo=True)
-
         #Create IK Chain
         rigLog.debug('Adding IK Chain')
         self.name.desc = 'iKHandle'
@@ -381,13 +374,53 @@ class Limb(object):
         endV = mpMath.Vector(endJoint)
         aimV = mpRig.getAimVector(startJoint,midJoint,endJoint)
 
+        aimZero,aimCtrl = self.addCtrl('aim',type='IK',shape='cross',parent=worldParent,xform=aimV)
+        endZero,endCtrl = self.addCtrl('end',type='IK',shape='cube',parent=worldParent,xform=endV)
+
+        #make an 'end null' to have a buffer between the last ctrl and the handle
+        self.name.desc = 'IKEnd'
+        endNull = cmds.group(em=True,n=self.name.get(),p=self.noXform)
+        cmds.xform(endNull,ws=True,m=cmds.xform(endCtrl,ws=True,q=True,m=True))
+
+        #constrain everything
+        cmds.parentConstraint(endCtrl,endNull,mo=True)
+        cmds.parentConstraint(endNull, handle,mo=True)
+        cmds.poleVectorConstraint(aimCtrl,handle)
+
+        #make the aim float between end and root of ik system
+        cmds.pointConstraint(endCtrl,worldParent,aimZero,mo=True)
+
+        #IK ctrl pickwalks
+        mpRig.addPickParent(aimCtrl,endCtrl)
+        mpRig.addPickParent(endCtrl,aimCtrl)
+
+        return(aimCtrl,endCtrl)
+
+    def addFKIKChain(self,startJoint,endJoint,localParent,worldParent):
+        '''Create a chain of FK ctrls with a blended IKRP solver. Requires three or more joints in chain.
+        Also creates a "stub" joint with an SC solver at the end of the chain, so that the last joint's
+        rotation is blended between the IK end ctrl and the last FK ctrl properly.
+        - localParent = drives translation of FK chain always, rotation when local space is on. IK ignores.
+        - worldParent = drives rotation when 'world' space is blended on. Drives IK translate and rotate.
+        Returns list of [FkCtrl1,FKCtrl2,...,IKAim,IKEnd]
+        '''
+        jointList = mpJoint.getJointList(startJoint,endJoint)
+        if len(jointList)<3:
+            raise RuntimeError('FKIKChain needs at least three joints')
+        fkCtrls = self.addFKChain(startJoint,endJoint,localParent)
+        aimCtrl,endCtrl = self.addIKChain(startJoint,endJoint,worldParent)
+
         #lock mid ctrls axes so the FK system can only rotate on one plane.
         #This is needed so the IK system, which is always on a plane, can snap to the FK system
         #First find which axis will be locked by checking its local axes against the 
         #normal vector of the chain. The highest dot product is the most parallel.
         #Note: I may need to lock joint DoF as well, sometimes Maya injects tiny rotation values there
         #when in IK mode.
+        midJointIdx = int(len(jointList)/2)
+        midJoint = jointList[midJointIdx]
         startV = mpMath.Vector(startJoint)
+        midV = mpMath.Vector(midJoint)
+        endV = mpMath.Vector(endJoint)
         chainMid = midV-startV
         chainEnd = endV-startV
         chainMid.normalize()
@@ -405,17 +438,12 @@ class Limb(object):
             for axis in axes:
                 mpAttr.lockAndHide(ctrl,['r%s'%axis])
             
+        #constrain fk ctrls to local/world
+        firstFKZero = cmds.listRelatives(fkCtrls[0],p=True)[0]
+        cmds.parentConstraint(localParent,firstFKZero,mo=True)
 
-        aimZero,aimCtrl = self.addCtrl('aim',type='IK',shape='cross',parent=worldParent,xform=aimV)
-        endZero,endCtrl = self.addCtrl('end',type='IK',shape='cube',parent=worldParent,xform=endV)
-
-        #make an 'end null' to have a buffer between the last ctrl and the handle
-        self.name.desc = 'IKEnd'
-        endNull = cmds.group(em=True,n=self.name.get(),p=self.noXform)
-        cmds.xform(endNull,ws=True,m=cmds.xform(endCtrl,ws=True,q=True,m=True))
-
-        #make a stub joint and SCIKsolver so the last ctrl will rotate the last joint
-        #in IK mode
+        #make a stub joint and an SCIKsolver
+        #This is using Maya's built in 'ikBlend' blends rotate on the last joint
         self.name.desc='ikStub'
         cmds.select(cl=True)
         stubJoint = cmds.joint(n=self.name.get())
@@ -427,19 +455,13 @@ class Limb(object):
         self.name.desc = 'stubEffector'
         stubEffector = cmds.rename(stubEffector,self.name.get())
         cmds.parent(stubHandle,self.noXform)
-        cmds.parentConstraint(endNull,stubHandle,mo=True)
+        cmds.parentConstraint(endCtrl,stubHandle,mo=True)
         mpCache.flag(stubJoint,False) #don't want stub joints saved in jointSRTs
-
-        #constrain everything
-        cmds.parentConstraint(endCtrl,endNull,mo=True)
-        cmds.parentConstraint(endNull, handle,mo=True)
-        cmds.poleVectorConstraint(aimCtrl,handle)
-
-        #make the aim float between end and root of ik system
-        cmds.pointConstraint(endCtrl,worldParent,aimZero,mo=True)
 
         #Construct the blend
         FKIKblender = self.addAttrLimb(ln=mpName.FKIKBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
+        effector = cmds.listConnections(endJoint+'.tx',s=0,d=1)[0]
+        handle = cmds.listConnections(effector+'.handlePath[0]',s=0,d=1)[0]
         cmds.connectAttr(FKIKblender, handle+'.ikBlend')
         cmds.connectAttr(FKIKblender, stubHandle+'.ikBlend')
 
@@ -452,9 +474,6 @@ class Limb(object):
             adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
             revNode = mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
         
-        mpRig.addPickParent(aimCtrl,endCtrl)
-        mpRig.addPickParent(endCtrl,aimCtrl)
-
         #setup IK->FK snapping messages
         #Since the IK end ctrl and the last FK ctrl can have totally different oris,
         #make a null matching the IK's ori under the FK ctrl to act as a snap target
