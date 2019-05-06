@@ -148,19 +148,20 @@ def setColor(ctrl,color):
     cmds.setAttr( ctrl + ".overrideEnabled", 1 )
     cmds.setAttr( ctrl + ".overrideColor", color)
     
-def setAsCtrl(obj):
+def setAsCtrl(obj,value=True):
     '''add an attribute that identifies this as a ctrl'''
     if not isCtrl(obj):
         attr.addAttrSwitch(obj + ".isCtrl",keyable=False,type='bool',value=1)
-    cmds.setAttr(obj + ".isCtrl",1)
+    cmds.setAttr(obj + ".isCtrl",value)
     
 def isCtrl(obj):
     '''Return True or False if given object is a ctrl.
     Checks for a boolean attribute that is created by addCtrl
     '''
-    if not obj:
+    try:
+        return cmds.getAttr(obj+'.isCtrl')
+    except (TypeError,ValueError): #obj or attr doesn't exist or is None
         return False
-    return cmds.objExists(obj+".isCtrl")
 
 def getMayaColor(color):
     '''Convert the a color into the maya display color value. 
