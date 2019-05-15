@@ -6,7 +6,7 @@ import mpyr.lib.rig as mpRig
 import mpyr.lib.joint as mpJoint
 import mpyr.lib.nurbs as mpNurbs
 import mpyr.lib.attr as mpAttr
-import limbBase
+import mpyr.rig.limb.limbBase as limbBase
 
 class WorldOffset(limbBase.Limb):
     '''A character's root offset. 
@@ -47,6 +47,7 @@ class FKOffset(limbBase.Limb):
         limbBase.Limb.__init__(self)
         self.translate = True
         self.useConstraint = True
+        self.pin=None
         
     def begin(self):
         limbBase.Limb.begin(self)
@@ -195,7 +196,6 @@ class NurbsStrip(limbBase.Limb):
 
         #Create NURBS strip by making curves along joints, and a cross section crv, then extruding
         crv=mpNurbs.curveFromNodes(jointList)
-        crvShape=cmds.listRelatives(crv,s=1)[0]
         crossCurve = cmds.curve(d=1,p=[(0,0,-0.5 * self.stripWidth),(0,0,0.5 * self.stripWidth)],k=(0,1))
         cmds.select([crossCurve,crv],r=1)
         surf = cmds.extrude(ch=False,po=0,et=2,ucp=1,fpt=1,upn=1,rotation=0,scale=1,rsp=1)[0]

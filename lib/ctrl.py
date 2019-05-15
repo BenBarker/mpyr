@@ -5,11 +5,10 @@ import os
 import json
 import maya.cmds as cmds
 import maya.mel as mel
-import attr
-import name
-import fileIO
-import rigmath
-import rig
+import mpyr.lib.attr as attr
+import mpyr.lib.name as name
+import mpyr.lib.fileIO as fileIO
+import mpyr.lib.rigmath as rigmath
 
 #List of available curve ctrl types
 CTRLTYPES=['sphere','cube','box','circle','cross','square','pyramid','line','spoon']
@@ -102,6 +101,16 @@ def changeCtrlShape(ctrl,newShape,shapeXform=None,size=1.0,segments=13):
     cmds.connectAttr(newShape + ".local", oldShape + ".create",force=True)
     cmds.delete(cmds.cluster(oldShape)) #force update of crv shape
     cmds.delete(newCrv)
+
+def copyCtrlShape(src,dst):
+    '''given a source curve, copy it's shape to destination curve'''
+    if cmds.nodeType(src)=='transform':
+        src = cmds.listRelatives(src,s=True)[0]
+    if cmds.nodeType(dst)=='transform':
+        dst = cmds.listRelatives(dst,s=True)[0]
+    cmds.connectAttr(src+".worldSpace",dst+".create",force=True)
+    cmds.xform(dst+".cv[0]",q=True,ws=True,t=True)#update attribute
+    cmds.disconnectAttr(src+".worldSpace",dst+".create")
 
 def getCurve(shape,size=1.0,segments=13):
     '''given a shape name return the corresponding curve.
@@ -238,47 +247,6 @@ def loadCtrlAppearance(filePath,search='',replace=''):
             cmds.setAttr(ctrlName+'.overrideRGBColors',ctrlData['oRGB'])
             cmds.setAttr(ctrlName+'.overrideColorRGB',*ctrlData['ocRGB'])
 
-def copyCtrlShape(src,dst):
-    '''given a source curve, copy it's shape to destination curve'''
-    if cmds.nodeType(src)=='transform':
-        src = cmds.listRelatives(src,s=True)[0]
-    if cmds.nodeType(dst)=='transform':
-        dst = cmds.listRelatives(dst,s=True)[0]
-    cmds.connectAttr(src+".worldSpace",dst+".create",force=True)
-    cmds.xform(dst+".cv[0]",q=True,ws=True,t=True)#update attribute
-    cmds.disconnectAttr(src+".worldSpace",dst+".create")
-
-def mirrorCtrlShape(src,dst=None):
-    '''given a source curve, copy it's mirror shape to dst.
-    If not dst is given then use rig library to find mirrored ctrl.'''
-    #find mirrored ctrl
-    if not dst:
-        dst=rig.findMirrorCtrl(src)
-    if not dst:
-        raise RuntimeError("could not find mirror ctrl. Specify with 'dst' arg")
-
-    #find mirror info
-    mirrorInfo=rig.getMirrorInfo(dst)
-    if not mirrorInfo:
-        mel.warning('Mirror info not found on destination ctrl, using -1 -1 -1')
-        mirrorInfo=(-1,-1,-1)
-
-    #duplicate the mirrored ctrl
-    tmpCtrl=cmds.curve(d=1,p=((0,0,0),(0,1,0)),k=(0,1),n='tmpCtrl')
-    cmds.xform(tmpCtrl,ws=True,m=cmds.xform(dst,ws=True,m=True,q=True))
-    copyCtrlShape(src,tmpCtrl)
-
-    #create cluster and flip
-    tmpCluster=cmds.cluster(tmpCtrl,n='tmpCluster')
-    cmds.xform(tmpCluster,p=True,ws=True,sp=cmds.xform(dst,ws=True,q=True,t=True))
-    cmds.scale(mirrorInfo[0],mirrorInfo[1],mirrorInfo[2],tmpCluster)
-    cmds.delete(tmpCtrl,ch=True)
-    
-    # copy and delete tmp object
-    copyCtrlShape(tmpCtrl,dst)
-    cmds.delete(tmpCtrl)
-
-    
 def makeCube(size=1.0,**kwargs):
     '''Make a nurbs curve cube with given size.'''
     wd=0.5*size

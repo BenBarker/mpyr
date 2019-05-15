@@ -4,8 +4,7 @@ import maya.cmds as cmds
 import mpyr.lib.joint as mpJoint
 import mpyr.lib.attr as mpAttr
 import mpyr.lib.rig as mpRig
-import mpyr.lib.nurbs as mpNurbs
-import limbBase
+import mpyr.rig.limb.limbBase as limbBase
 
 class SpineFK(limbBase.Limb):
     '''Simple FK chain with "hips" offset on startJoint.

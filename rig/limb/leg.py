@@ -1,5 +1,6 @@
 '''Leg Limbs, such as biped five joint leg'''
 import math
+import logging
 import maya.cmds as cmds
 import mpyr.lib.rigmath as mpMath
 import mpyr.lib.joint as mpJoint
@@ -7,7 +8,9 @@ import mpyr.lib.name as mpName
 import mpyr.lib.attr as mpAttr
 import mpyr.lib.rig as mpRig
 import mpyr.lib.ctrl as mpCtrl
-import limbBase
+import mpyr.rig.limb.limbBase as limbBase
+
+RIGLOG = logging.getLogger('rig.limb')
 
 class LegFKIK(limbBase.Limb):
     '''Leg with three joints, hip/knee/ankle, and a foot with ball and toetip.
@@ -48,7 +51,7 @@ class LegFKIK(limbBase.Limb):
         if self.heel:
             heelPos = mpMath.Transform(self.heel)
         else:
-            rigLog.warning('No ".heel" joint specified on LegFKIK, guessing pivot')
+            RIGLOG.warning('No ".heel" joint specified on LegFKIK, guessing pivot')
             #take the ball->toe length, double it, and go back from the ball that much
             heelOffset = mpMath.Vector(jointList[-2]) #ball
             heelOffset -= mpMath.Vector(jointList[-1]) #minus toe
@@ -220,7 +223,6 @@ class DogLeg(limbBase.Limb):
         #start with standard blend setup and FKIKChain on hip->ankle
         self.addPinBlend()
         legCtrls = self.addFKIKChain(jointList[0],jointList[-3],self.pinBlend,self.pinWorld)
-        ikAim=legCtrls[-2]
         ikEnd=legCtrls[-1]
         effector,handle=mpJoint.getIKNodes(jointList[-3])
 
@@ -239,7 +241,6 @@ class DogLeg(limbBase.Limb):
         #set ctrl flags false on driver ctrls.
         #This way animators will never touch them and they won't snap/reset/etc.
         driverEndNull=cmds.listRelatives(driverEndCtrl,p=True)[0]
-        driverAimNull=cmds.listRelatives(driverAimCtrl,p=True)[0]
         mpCtrl.setAsCtrl(driverEndCtrl,False)
         mpCtrl.setAsCtrl(driverAimCtrl,False)
         #and delete shapes so they aren't visible 
@@ -324,7 +325,7 @@ class DogLeg(limbBase.Limb):
         for ctrl in [ballFKCtrl]:
             shape = cmds.listRelatives(ctrl,s=True)[0]
             adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
-            revNode = mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
+            mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
 
         #cleanup
         for item in [ballHandle,toeHandle,handle]:

@@ -2,19 +2,19 @@
 
 Limbs are units or blocks of a rig that can be chained together to create
 a full character. They hold the code where the ctrls, constraints, ik solvers, etc. are
-actually created and attached that make the rig. One, twenty, or hundreds of limbs 
+actually created and attached that make the rig. One, twenty, or hundreds of limbs
 could work together in a rig to move the skeleton in an animator friendly way.
 
-The base Limb class implements the most generic limb. It hooks onto at least one incoming 
+The base Limb class implements the most generic limb. It hooks onto at least one incoming
 transform via it's 'pinParent' or 'pinWorld', and it drives one more more joints given via
 it's startJoint (and perhaps endJoint) attribute(s).
 
-It also maintains name info, can make controls, and constrain things together. 
-It does book keeping with object sets after building so animation tools can be easily written to snap, 
+It also maintains name info, can make controls, and constrain things together.
+It does book keeping with object sets after building so tools can be easily written to snap,
 reset, or otherwise manipulate the ctrls it makes.
 
-Like Rigs (see rigbase.py), Limbs have a begin, build, and end phase for setup, creation, 
-and cleanup. Setup and cleanup are implemented on the base class in this module, with 
+Like Rigs (see rigbase.py), Limbs have a begin, build, and end phase for setup, creation,
+and cleanup. Setup and cleanup are implemented on the base class in this module, with
 creation handled by child classes.
 
 The child subclasses are kept in their own modules, such as generic.py. There could
@@ -26,7 +26,7 @@ import inspect
 import copy
 import maya.cmds as cmds
 
-import mpyr.lib.attr as mpAttr 
+import mpyr.lib.attr as mpAttr
 import mpyr.lib.name as mpName
 import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.cns as  mpCns
@@ -35,7 +35,7 @@ import mpyr.lib.joint as mpJoint
 import mpyr.lib.rig as mpRig
 import mpyr.lib.cache as mpCache
 
-rigLog = logging.getLogger('rig.limb')
+RIGLOG = logging.getLogger('rig.limb')
 
 class Limb(object):
     '''This is a virtual base class for all other limbs.
@@ -58,38 +58,38 @@ class Limb(object):
     - endCtrl: The last ctrl of the limb. If not set explicitly will be set to ctrl
                driving the endJoint, failing that the last ctrl made. Used when
                setting up pickwalk between limbs.
-    - rig: the rig object this limb is being built under. This is set when the limb is 
+    - rig: the rig object this limb is being built under. This is set when the limb is
            built via calling 'addLimb' by a rig object during a build script.
     - limbNode: the top level transform node of the limb. Set when the limb begins
                 building, and used frequently internally to parent things under the limb.
     - noXform: a group made under the limbNode that has 'inheritsTransform' off. Set
-               when the limb begins, it gives a usefull place to keep nodes that 
+               when the limb begins, it gives a usefull place to keep nodes that
                shouldn't move or be touched by animators.
     - ctrls: a list of all ctrls made during limb build. Ctrls are added by the addCtrl
              method.
     - pinParent: a transform that is constrained to other objects to drive
-                 the limb's local space. Almost all limbs have a pinParent. 
-                 It is created when the limb calls addPinParent, and gets 
-                 constrained to the limb's parent by the TD when they 'wire' 
+                 the limb's local space. Almost all limbs have a pinParent.
+                 It is created when the limb calls addPinParent, and gets
+                 constrained to the limb's parent by the TD when they 'wire'
                  the limb with the '>' operator.
     - pinWorld: similar to pinParent, but takes a 'world' transform that the limb
                 can use to do blending or worldspace behavior. Not all limbs have
                 a pinWorld. TD's can wire a limb's pinWorld with the '>>' operator,
                 but any unwired pinWorlds get automatically wired to the worldOffset
                 when rig building finishes.
-    ''' 
+    '''
     def __init__(self):
         object.__init__(self)
         self.name = mpName.Name()
         self.name.part = 'Limb'
         self.name.loc = 'M'
-        
+
         self.startJoint = None
         self.endJoint = None
 
         self.startCtrl = None
         self.endCtrl = None
-        
+
         self.rig = None
         self.limbNode = None
         self.noXform = None
@@ -97,13 +97,14 @@ class Limb(object):
         
         self.pinParent = None
         self.pinWorld = None
+        self.pinBlend=None
 
     def __repr__(self):
         return '%s %s_%s' % (self.__class__.__name__, self.name.part, self.name.loc)
         
     def __gt__(self,other):
         '''Override greater than (>) to do pinParent constraining'''
-        rigLog.info('wiring %s'%(self))
+        RIGLOG.info('wiring %s',self)
         #Check pinParent
         if not self.pinParent or not cmds.objExists(self.pinParent):
             raise RuntimeError('Cannot wire, .pinParent not found on limb %s'%self)
@@ -113,36 +114,36 @@ class Limb(object):
         if isinstance(other,Limb):
             if hasattr(other,'endJoint'):
                 drivingNode=other.endJoint
-            elif hasAttr(other,startJoint):
+            elif hasattr(other, 'startJoint'):
                 drivingNode=other.startJoint
-            rigLog.debug('wiring found driver %s'%(drivingNode))
+            RIGLOG.debug('wiring found driver %s',drivingNode,)
         #if that didn't work, see if 'other' is just a node:
         if cmds.objExists(drivingNode):
-                rigLog.debug('wiring limb to %s'%(drivingNode))
-                cmds.parentConstraint(drivingNode,self.pinParent,mo=True)
+            RIGLOG.debug('wiring limb to %s',drivingNode,)
+            cmds.parentConstraint(drivingNode,self.pinParent,mo=True)
 
         #Try and setup pickwalk across limbs
         #If other is a limb use its 'endCtrl'
         if isinstance(other,Limb):
             if self.startCtrl and other.endCtrl:
-                rigLog.debug('wiring pickParent from %s to %s'%(self.startCtrl,other.endCtrl))
+                RIGLOG.debug('wiring pickParent from %s to %s',self.startCtrl,other.endCtrl)
                 mpRig.addPickParent(self.startCtrl,other.endCtrl)
         #Otherwise grab whatever is driving 'other' and see if it's a ctrl
         elif cmds.objExists(other):
             endCtrl=mpRig.getCtrlFromJoint(other)
             print 'endCtrl:',endCtrl
             if mpCtrl.isCtrl(endCtrl):
-                rigLog.debug('wiring pickParent from %s to %s'%(self.startCtrl,endCtrl))
+                RIGLOG.debug('wiring pickParent from %s to %s',self.startCtrl,endCtrl)
                 mpRig.addPickParent(self.startCtrl,endCtrl)
             else:
-                rigLog.debug('wiring could not find pickParent on %s, skipping'%other)
+                RIGLOG.debug('wiring could not find pickParent on %s, skipping',other)
         else:
-            rigLog.debug('wiring found no pickParent to connect from %s to %s'%(self,other))
+            RIGLOG.debug('wiring found no pickParent to connect from %s to %s',self,other)
 
             
     def __rshift__(self,other):
         '''Override rshift (>>) to do pinWorld constraining'''
-        rigLog.info('wiring %s pinWorld to %s'%(self,other))
+        RIGLOG.info('wiring %s pinWorld to %s',self,other)
         if cmds.objExists(self.pinWorld):
             cmds.parentConstraint(other,self.pinWorld,mo=True)
         else:
@@ -152,7 +153,7 @@ class Limb(object):
         '''Creates a transform to act as an 'incoming parent' hook for the limb.
         Sets the .pinParent attr on the limb to this object, and returns it.
         '''
-        rigLog.debug('adding pin parent')
+        RIGLOG.debug('adding pin parent')
         self.name.desc = mpName.PINPARENT
         self.pinParent = cmds.group(em=True,n=self.name.get(),p=self.limbNode)
         #try to move the pinParent to start joint, for a sensible pivot
@@ -164,7 +165,7 @@ class Limb(object):
         '''Creates a transform to act as an 'incoming world' hook for the limb.
         Sets the .pinWorld attr on the limb to this object, and returns it.
         '''
-        rigLog.debug('adding pin world')
+        RIGLOG.debug('adding pin world')
         self.name.desc = mpName.PINWORLD
         self.pinWorld = cmds.group(em=True,n=self.name.get(),p=self.limbNode)
         if self.startJoint:
@@ -175,7 +176,7 @@ class Limb(object):
         '''Creates a world pin and a parent pin, then makes a blendPin that blends
         between them. Sets a .pinBlend attr on the limb and also returns it.
         '''
-        rigLog.debug('added pin blend setup')
+        RIGLOG.debug('added pin blend setup')
         blender = self.addAttrLimb(ln=mpName.LIMBBLENDATTR, at='float',min=0,max=1,dv=0,k=True)
         self.addPinParent()
         self.addPinWorld()
@@ -197,13 +198,13 @@ class Limb(object):
         '''This method builds the limb by calling the creation methods in the correct 
         order.
         '''
-        rigLog.info('begin limb %s'%self)
+        RIGLOG.info('begin limb %s',self)
         self.begin()
-        rigLog.debug('limb build')
+        RIGLOG.debug('limb build')
         self.build()
-        rigLog.debug('ending limb build')
+        RIGLOG.debug('ending limb build')
         self.end()
-        rigLog.info('limb build complete')
+        RIGLOG.info('limb build complete')
         
     def begin(self):
         '''Limb build setup. Make a top level node, some nodes that are on all limbs'''
@@ -211,7 +212,7 @@ class Limb(object):
         
         #create a noXform node
         self.name.desc='NoXform'
-        self.noXform = cmds.createNode('transform', n=self.name.get(),   p=self.limbNode)
+        self.noXform = cmds.createNode('transform', n=self.name.get(), p=self.limbNode)
         cmds.setAttr(self.noXform+'.inheritsTransform', 0)
         
     def end(self):
@@ -232,7 +233,7 @@ class Limb(object):
         The name convention used here is specified in mpName, which is also used 
         to sort controls after building into sets by rigBase.Rig.addLimbSets().
         '''
-        rigLog.debug('Adding %s control %s'%(type,name))
+        RIGLOG.debug('Adding %s control %s',type,name)
         if type == 'FK':
             self.name.desc = name + mpName.FKCTRL
         elif type == 'IK':
@@ -267,7 +268,7 @@ class Limb(object):
 
     def deleteCtrl(self,ctrl):
         '''removed a ctrl nodes and info from limb'''
-        rigLog.debug('deleting control %s'%ctrl)
+        RIGLOG.debug('deleting control %s',ctrl)
         zeroNode = cmds.listRelatives(ctrl,p=1)[0]
         cmds.delete(ctrl)
         cmds.delete(zeroNode)
@@ -283,7 +284,7 @@ class Limb(object):
         self.limbNode = cmds.createNode('transform',n=self.name.get())
 
         #add empty shape node to store any attributes created by addAttrLimb
-        shape = cmds.createNode('mesh',p=self.limbNode,n=self.limbNode+mpName.LIMBSHAPE)
+        cmds.createNode('mesh',p=self.limbNode,n=self.limbNode+mpName.LIMBSHAPE)
         
         if self.rig:
             cmds.parent(self.limbNode,self.rig.limbNode)
@@ -302,7 +303,7 @@ class Limb(object):
         #I'd like to return the attr name instead of addAttr's default None,
         #so pull it out of the kwargs and return
         attrName = kwargs.get('ln',kwargs.get('longName',None))
-        rigLog.debug('adding limb attribute %s'%attrName)
+        RIGLOG.debug('adding limb attribute %s',attrName)
         fullName = limbNodeShape+'.'+attrName
         if cmds.objExists(fullName):
             return fullName
@@ -318,7 +319,7 @@ class Limb(object):
         This gives animators easy access to limb node attrs no matter what ctrl they select.
         '''
         limbShape = self.getLimbNodeShape()
-        rigLog.debug('instancing limbNode shape %s under ctrls'%limbShape)
+        RIGLOG.debug('instancing limbNode shape %s under ctrls',limbShape)
         for ctrl in self.ctrls:
             if not mpCtrl.isCtrl(ctrl):
                 continue
@@ -331,7 +332,7 @@ class Limb(object):
         '''Create chain of FK ctrls on given joints, returns list of created ctrls
         - parent = parent of the first ctrl
         '''
-        rigLog.debug('adding FKChain')
+        RIGLOG.debug('adding FKChain')
         jointList = mpJoint.getJointList(startJoint,endJoint)
         ctrlParent = parent
         fkCtrls = []
@@ -362,7 +363,7 @@ class Limb(object):
         if len(jointList)<3:
             raise RuntimeError('FKIKChain needs at least three joints')
         #Create IK Chain
-        rigLog.debug('Adding IK Chain')
+        RIGLOG.debug('Adding IK Chain')
         self.name.desc = 'iKHandle'
         handle,effector = cmds.ikHandle(n=self.name.get(),solver='ikRPsolver',sj=startJoint,ee=endJoint)
         self.name.desc = 'effector'
@@ -473,7 +474,7 @@ class Limb(object):
         for ctrl in fkCtrls:
             shape = cmds.listRelatives(ctrl,s=True)[0]
             adder = mpAttr.connectWithAdd(FKIKblender,shape+'.v',-0.4999999)
-            revNode = mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
+            mpAttr.connectWithReverse(adder+'.output',shape+'.v',force=True)
         
         #setup IK->FK snapping messages
         #Since the IK end ctrl and the last FK ctrl can have totally different oris,
@@ -500,7 +501,7 @@ class Limb(object):
         and tries to mirror iterables containing strings.
         Limbs with funky attributes should implement their own mirror if needed.
         '''
-        rigLog.debug('mirroring limb')
+        RIGLOG.debug('mirroring limb')
         leftToken = mpName.SEP + mpName.LEFT + mpName.SEP
         rightToken = mpName.SEP + mpName.RIGHT + mpName.SEP
         
@@ -533,7 +534,7 @@ class Limb(object):
                     copiedIterable = copy.copy(value)
                     for item in copiedIterable:
                         if isinstance(item,basestring):
-                            if valuleftToken in item:
+                            if leftToken in item:
                                 item = item.replace(leftToken,rightToken)
                             elif rightToken in item:
                                 item = item.replace(rightToken,leftToken)
@@ -551,10 +552,10 @@ class Limb(object):
         did not set these attributes this method attempts to guess, first by looking at
         what drives the start and end joints, then simply using the first and last members
         of the .ctrls list.'''
-        rigLog.info('checking %s startCtrl and endCtrl'%self)
+        RIGLOG.info('checking %s startCtrl and endCtrl',self)
         #If this is already set then return
-        if self.startCtrl and self.endCtrls:
-            rigLog.debug('startCtrl and endCtrl already set')
+        if self.startCtrl and self.endCtrl:
+            RIGLOG.debug('startCtrl and endCtrl already set')
             return
         #Check ctrls to see if they drive start and end joints:
         for ctrl in self.ctrls:
@@ -566,16 +567,16 @@ class Limb(object):
             if not self.startCtrl:
                 if joint==self.startJoint:
                     self.startCtrl=ctrl
-                    rigLog.debug('startCtrl set to %s'%ctrl)
+                    RIGLOG.debug('startCtrl set to %s',ctrl)
             if not self.endCtrl:
                 if joint==self.endJoint:
                     self.endCtrl=ctrl
-                    rigLog.debug('endCtrl set to %s'%ctrl)
+                    RIGLOG.debug('endCtrl set to %s',ctrl)
         #fallback, simply use first and last ctrls
         if not self.startCtrl:
             self.startCtrl=self.ctrls[0]
-            rigLog.debug('startCtrl fallback to %s'%self.ctrls[0])
+            RIGLOG.debug('startCtrl fallback to %s',self.ctrls[0])
         if not self.endCtrl:
             self.endCtrl=self.ctrls[-1]
-            rigLog.debug('endCtrl fallback to %s'%self.ctrls[-1])   
+            RIGLOG.debug('endCtrl fallback to %s',self.ctrls[-1])   
         

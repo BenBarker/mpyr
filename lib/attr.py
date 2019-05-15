@@ -8,20 +8,20 @@ def visOveride(obj,value):
     cmds.setAttr(obj+'.overrideVisibility',value)
 
 def hideAnimChannels(obj,lock=False):
-        '''hide anim channels on given obj'''
-        for attr in ('s','r','t'):
-            for axis in ('x','y','z'):
-                cmds.setAttr(obj+'.%s%s'%(attr,axis), keyable=False,channelBox=False,lock=lock)
-        cmds.setAttr(obj+'.v', keyable=False,channelBox=False)
-        
+    '''hide anim channels on given obj'''
+    for attr in ('s','r','t'):
+        for axis in ('x','y','z'):
+            cmds.setAttr(obj+'.%s%s'%(attr,axis), keyable=False,channelBox=False,lock=lock)
+    cmds.setAttr(obj+'.v', keyable=False,channelBox=False)
+    
 def matchAttr(src,target,attr):
     '''match the attr on the target to the same attr on src. Will work through locks.'''
     if not cmds.objExists(src+'.'+attr):
-        raise RuntimeError('Source object.attr not found: %s.%s'%(obj,attr))
+        raise RuntimeError('Source object.attr not found: %s.%s'%(src,attr))
     srcType = cmds.getAttr(src+'.'+attr,type=True)
     
     if not cmds.objExists(target+'.'+attr):
-        raise RuntimeError('target object.attr not found: %s.%s'%(obj,attr))
+        raise RuntimeError('target object.attr not found: %s.%s'%(src,attr))
     targetType = cmds.getAttr(target+'.'+attr,type=True)
     
     if not srcType == targetType:

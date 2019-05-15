@@ -7,7 +7,7 @@ def ensurePath(path,force=False):
     Returns created path'''
     if os.path.exists(path) and not force:
         raise IOError('path already exists, use force=True to overwrite')
-    directory,file=os.path.split(path)
+    directory,filename=os.path.split(path)
     if not os.path.exists(directory):
         #some remote filers may need a 'three strikes' test here using sleep()
         os.makedirs(directory)

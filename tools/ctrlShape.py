@@ -6,6 +6,7 @@ import sys
 import subprocess
 import tempfile
 import maya.cmds as cmds
+import maya.mel as mel
 import mpyr.lib.rig as mpRig
 import mpyr.lib.ctrl as mpCtrl
 import mpyr.lib.fileIO as mpFile
@@ -136,7 +137,7 @@ class SaveLoadCtrlShape(object):
     def mirrorCtrl(self,*args,**kwargs):
         sel=cmds.ls(sl=True) or []
         for obj in sel:
-            mpCtrl.mirrorCtrlShape(obj)
+            self.mirrorCtrlShape(obj)
         cmds.select(sel,r=True)
 
     def getTempFileName(self):
@@ -195,3 +196,34 @@ class SaveLoadCtrlShape(object):
                 print "File open failed:", e
         else:
             print 'failed tests'
+
+
+    def mirrorCtrlShape(self,src,dst=None):
+        '''given a source curve, copy it's mirror shape to dst.
+        If not dst is given then use rig library to find mirrored ctrl.'''
+        #find mirrored ctrl
+        if not dst:
+            dst=mpRig.findMirrorCtrl(src)
+        if not dst:
+            raise RuntimeError("could not find mirror ctrl. Specify with 'dst' arg")
+
+        #find mirror info
+        mirrorInfo=mpRig.getMirrorInfo(dst)
+        if not mirrorInfo:
+            mel.warning('Mirror info not found on destination ctrl, using -1 -1 -1')
+            mirrorInfo=(-1,-1,-1)
+
+        #duplicate the mirrored ctrl
+        tmpCtrl=cmds.curve(d=1,p=((0,0,0),(0,1,0)),k=(0,1),n='tmpCtrl')
+        cmds.xform(tmpCtrl,ws=True,m=cmds.xform(dst,ws=True,m=True,q=True))
+        mpCtrl.copyCtrlShape(src,tmpCtrl)
+
+        #create cluster and flip
+        tmpCluster=cmds.cluster(tmpCtrl,n='tmpCluster')
+        cmds.xform(tmpCluster,p=True,ws=True,sp=cmds.xform(dst,ws=True,q=True,t=True))
+        cmds.scale(mirrorInfo[0],mirrorInfo[1],mirrorInfo[2],tmpCluster)
+        cmds.delete(tmpCtrl,ch=True)
+        
+        # copy and delete tmp object
+        mpCtrl.copyCtrlShape(tmpCtrl,dst)
+        cmds.delete(tmpCtrl)

@@ -1,8 +1,6 @@
 '''helper functions for joint navigation/manipulation'''
 import maya.cmds as cmds
-import rigmath
-import dag
-reload(rigmath)
+import mpyr.lib.rigmath as rigmath
 
 def getTopJoint(node):
     '''given a node get the highest parent joint

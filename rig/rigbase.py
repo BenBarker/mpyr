@@ -13,7 +13,6 @@ To build a rig their sub class should be instanced in Maya and a call made to
 the .create() method. 
 '''
 
-import sys
 import os
 import getpass
 import logging
@@ -27,7 +26,7 @@ import mpyr.lib.rig as mpRig
 import mpyr.lib.cache as mpCache
 import mpyr.rig.limb.generic as limbGen
 
-rigLog = logging.getLogger('rig')
+RIGLOG = logging.getLogger('rig')
 
 class Rig(object):
     '''This is a virtual base class for all other rigs, and is where most of the generic
@@ -52,7 +51,7 @@ class Rig(object):
     '''  
     def __init__(self):
         object.__init__(self)
-        rigLog.debug('init')
+        RIGLOG.debug('init')
         
         #This is a cosmetic setting for ctrl sizes and whatnot.
         self.rigScale = 1
@@ -61,9 +60,17 @@ class Rig(object):
         self.limbs = []
         
         #These properties are filled in as the rig builds
-        self.rigNode = None     #the top transform for the rig, all things parented under this
-        self.rigName = None     #the name of the rig. Default set in setRigNameDefault
-        self.rootJoint = ''       #the root joint of the skeleton
+        self.rigNode = None      #the top transform for the rig, all things parented under this
+        self.rigName = None      #the name of the rig. Default set in setRigNameDefault
+        self.rootJoint = ''      #the root joint of the skeleton
+        self.limbNode = None     #The transform that limbs are parented under
+        self.geoNode = None      #The transform that geometry is parented under
+        self.skeletonNode = None #The transform that the skeleton is parented under
+        self.masterSet = None    #The top level object set
+        self.ctrlSet = None      #The object set that will hold all the ctrls that are built
+        self.cacheSet = None     #The object set that will hold all cacheable nodes
+        self.loadSet = None      #The object set that will hold all nodes that can receive cache
+
 
         #Attrs set before build, used to import files/weights/etc. Can be set automatically based
         #on pipeline standards or a database.
@@ -80,19 +87,19 @@ class Rig(object):
         '''Builds the rig by calling the creation methods in the correct 
         order.
         '''
-        rigLog.info('beginning rig build')
+        RIGLOG.info('beginning rig build')
         self.begin()
-        rigLog.info('building rig')
+        RIGLOG.info('building rig')
         self.build()
-        rigLog.info('ending build')
+        RIGLOG.info('ending build')
         self.end()
-        rigLog.info('rig complete')
+        RIGLOG.info('rig complete')
         
     def begin(self):
         '''Pre build actions'''
         cmds.file(new=True, f=True)
 
-        rigLog.debug('making rig nodes')
+        RIGLOG.debug('making rig nodes')
         self.setRigNameDefault()  
         self.addRigNode()
         self.addMasterSet()
@@ -191,7 +198,7 @@ class Rig(object):
         '''
         if not self.rigName:
             default = self.__class__.__name__
-            rigLog.warning('rig name not set, using default class name %s' % default)
+            RIGLOG.warning('rig name not set, using default class name %s', default)
             self.rigName = default
         
     def addRigNode(self):
@@ -200,10 +207,10 @@ class Rig(object):
         This node is named after the rig.rigName attribute.
         '''
         if cmds.objExists(self.rigName):
-            raise RuntimeError('Could not create main rig node. Node of name %s already exists.'%self.rigName)
+            raise RuntimeError('Could not create main rig node. Node of name %s already exists.', self.rigName)
         self.rigNode = cmds.createNode('transform',n=self.rigName)
         mpAttr.addAttrSwitch(self.rigNode+'.isRig',keyable=False,type='bool',value=1)
-        rigLog.debug('created root node %s'%self.rigNode)
+        RIGLOG.debug('created root node %s', self.rigNode)
 
         return self.rigNode
         
@@ -219,7 +226,7 @@ class Rig(object):
                     self.rootJoint = child
                     break
         if not self.rootJoint:
-            rigLog.warning('root joint not found in imported skeleton %s' % self.skeletonPath)
+            RIGLOG.warning('root joint not found in imported skeleton %s', self.skeletonPath)
 
     def importGeo(self):
         '''Import the file specified with .geoPath'''
@@ -241,27 +248,26 @@ class Rig(object):
         If no group is made the root nodes are returned. If a group is made the group is 
         returned.
         '''
-        rigLog.info('importing file %s'%fileName)
+        RIGLOG.info('importing file %s', fileName)
 
         if not os.path.exists(fileName):
-            raise IOError('File path %s not found, cannot getFile'%fileName)
+            raise IOError('File path %s not found, cannot getFile', fileName)
         fullPath = fileName
         filePath,fileName = os.path.split(fullPath)
         splitFileName = fileName.split('.')
-        fileExt = splitFileName[0]
         fileName = '.'.join(splitFileName[:-1]) #some people use dots in fileNames a lot
         
         #Import file
         nodeList = self.fileImport(fullPath)
         rootNodes = mpDag.getRootNodes(nodeList)
         
-        rigLog.debug('file import done, %s new root nodes' % len(rootNodes))
+        RIGLOG.debug('file import done, %s new root nodes', len(rootNodes))
         
         #if underGroup=False simply return a list of new nodes that are root nodes
         if not underGroup:
             for node in rootNodes:
                 cmds.parent(node,self.rigNode)
-            rigLog.debug('file imported under rigNode %s' % self.rigNode)
+            RIGLOG.debug('file imported under rigNode %s', self.rigNode)
             return rootNodes
         
         #If underGroup=True we must make the group. First, determine what name it will be.
@@ -270,12 +276,12 @@ class Rig(object):
             
         #Create group and parent nodes
         if not cmds.objExists(underGroupName):
-            newGroup = cmds.group(n=underGroupName,em=True,p=self.rigNode)
+            cmds.group(n=underGroupName,em=True,p=self.rigNode)
             
         for node in rootNodes:
             cmds.parent(node,underGroupName)
         
-        rigLog.info('file imported under group %s' % underGroupName)
+        RIGLOG.info('file imported under group %s', underGroupName)
         return underGroupName
 
             
@@ -293,7 +299,7 @@ class Rig(object):
             
     def lock(self):
         '''Lock and hide nodes that shouldn't be touched'''
-        rigLog.info('locking rig')
+        RIGLOG.info('locking rig')
 
         cmds.setAttr(self.rigNode+'.rigVersion', lock=True)
         cmds.setAttr(self.rigNode+'.buildDate', lock=True)
@@ -309,21 +315,21 @@ class Rig(object):
         See if they are connected to something, and if not constrain to
         the world offset.
         '''
-        rigLog.info('constraining floating limbs')
+        RIGLOG.info('constraining floating limbs')
         for limb in self.limbs:
             if limb.pinWorld:
                 #check for cns
                 cnx = cmds.listConnections(limb.pinWorld+'.tx',s=1,d=0)
                 if not cnx:
                     #cns to the last ctrl of the first limb (the world offset)
-                    rigLog.debug('limb %s not constrained, attaching to world'%limb)
+                    RIGLOG.debug('limb %s not constrained, attaching to world', limb)
                     cmds.parentConstraint(self.limbs[0].ctrls[-1],limb.pinWorld,mo=True)
             elif limb.pinParent:
                 #check for cns
                 cnx = cmds.listConnections(limb.pinParent+'.tx',s=1,d=0)
                 if not cnx:
                     #cns to the last ctrl of the first limb (the world offset)
-                    rigLog.debug('limb %s not constrained, attaching to world'%limb)
+                    RIGLOG.debug('limb %s not constrained, attaching to world', limb)
                     cmds.parentConstraint(self.limbs[0].ctrls[-1],limb.pinParent,mo=True)
             
     def addMasterSet(self):
@@ -351,7 +357,7 @@ class Rig(object):
         FK/IK ctrls are sorted into sets by name. It's specified here, and when the ctrls are made, 
         by the convention in lib/name.py
         '''
-        rigLog.info('adding limb ctrl sets')
+        RIGLOG.info('adding limb ctrl sets')
         for limb in self.limbs:
             ctrls = []
             fkCtrls = []
@@ -396,7 +402,7 @@ class Rig(object):
     def addLimb(self,limbObj):
         '''build the given limb obj and add it to the rig'''
         limbObj.rig = self
-        rigLog.info('adding limb %s' % limbObj)
+        RIGLOG.info('adding limb %s', limbObj)
         limbObj.create()
         self.limbs.append(limbObj)
         
@@ -423,7 +429,7 @@ class AnimRig(Rig):
                 #if joint explicitly flagged not to cache then skip it
                 if mpCache.isFlagged(jnt) and not mpCache.getFlag(jnt):
                     continue
-                rigLog.debug('flagging %s to cache'%jnt)
+                RIGLOG.debug('flagging %s to cache', jnt)
                 cmds.sets(jnt,add=self.cacheSet)
                 mpCache.flag(jnt,True)
 
@@ -457,7 +463,7 @@ class DeformRig(Rig):
             #if mesh explicitly flagged not to cache then skip it
             if mpCache.isFlagged(meshNode) and not mpCache.getFlag(meshNode):
                 continue
-            rigLog.debug('flagging %s to cache'%meshNode)
+            RIGLOG.debug('flagging %s to cache', meshNode)
             cmds.sets(meshNode,add=self.cacheSet)
             mpCache.flag(meshNode,True)
     

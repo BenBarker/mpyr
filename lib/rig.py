@@ -4,10 +4,9 @@ tools, like on a marking menu.
 '''
 import maya.cmds as cmds
 
-import rigmath   
-import attr
-import ctrl
-import name
+import mpyr.lib.rigmath as rigmath
+import mpyr.lib.ctrl as ctrl
+import mpyr.lib.name as name
 
 def getSelectedCtrls():
     '''return a list of selected ctrls'''
@@ -201,7 +200,7 @@ def resetCtrl(ctrlName):
             float(cmds.getAttr(fullname))
             default = cmds.addAttr(fullname,q=True,defaultValue=True)
             cmds.setAttr(fullname,default)
-        except (TypeError,RuntimeError),e:
+        except (TypeError,RuntimeError):
             continue
         
 def resetSelectedCtrls():
@@ -291,8 +290,8 @@ def getPickChildren(ctrlName):
         return cmds.listConnections(ctrlName+'.pickChildren',s=0,d=1) or []
     return []
 
-def addMirrorInfo(ctrl):
-    '''given a ctrl add mirror info attributes to the ctrl, so poses can be mirrored.
+def addMirrorInfo(ctrlName):
+    '''given a ctrlName add mirror info attributes to the ctrlName, so poses can be mirrored.
     This method needs to do a dot product on each axis and set the mirror info based on
     if the axes point towards or away. Then it sets the mirror info attr to be 1 or -1
     based on that test (per axis). This is used later to mirror poses.
@@ -302,12 +301,12 @@ def addMirrorInfo(ctrl):
 
     Mirror Info is added by the base rig class at the very end of building.
     '''
-    other = findMirrorCtrl(ctrl)
+    other = findMirrorCtrl(ctrlName)
     if not other:
         return
     mirrorInfo = [1,1,1]
     oXform = rigmath.Transform(other)
-    cXform = rigmath.Transform(ctrl)
+    cXform = rigmath.Transform(ctrlName)
     cXform.reflect()
     cx = cXform.xAxis()
     cy = cXform.yAxis()
@@ -323,13 +322,13 @@ def addMirrorInfo(ctrl):
     if cz.dot(oz) <= 0:
         mirrorInfo[2] = -1
     
-    if not cmds.objExists(ctrl+'.mirrorInfo'):
-        cmds.addAttr(ctrl,ln='mirrorInfo',at='double3',k=False)
-        cmds.addAttr(ctrl,ln='mirrorInfoX',at='double',parent='mirrorInfo',k=False)
-        cmds.addAttr(ctrl,ln='mirrorInfoY',at='double',parent='mirrorInfo',k=False)
-        cmds.addAttr(ctrl,ln='mirrorInfoZ',at='double',parent='mirrorInfo',k=False)
+    if not cmds.objExists(ctrlName+'.mirrorInfo'):
+        cmds.addAttr(ctrlName,ln='mirrorInfo',at='double3',k=False)
+        cmds.addAttr(ctrlName,ln='mirrorInfoX',at='double',parent='mirrorInfo',k=False)
+        cmds.addAttr(ctrlName,ln='mirrorInfoY',at='double',parent='mirrorInfo',k=False)
+        cmds.addAttr(ctrlName,ln='mirrorInfoZ',at='double',parent='mirrorInfo',k=False)
     
-    cmds.setAttr(ctrl+'.mirrorInfo', mirrorInfo[0], mirrorInfo[1], mirrorInfo[2])
+    cmds.setAttr(ctrlName+'.mirrorInfo', mirrorInfo[0], mirrorInfo[1], mirrorInfo[2])
 
 def getMirrorInfo(node):
     '''returns a list of the node's mirror info data, or None if attr not found'''
@@ -363,12 +362,12 @@ def mirrorCtrl(ctrlName):
     for index,attr in enumerate(['tx','ty','tz']):
         try:
             cmds.setAttr(opCtrl+'.'+attr, cmds.getAttr(ctrlName+'.'+attr) * mirrorInfo[index])
-        except RuntimeError, e:
+        except RuntimeError:
             pass #silently skip locked attrs
     for index,attr in enumerate(['rx','ry','rz']):
         try:
             cmds.setAttr(opCtrl+'.'+attr, cmds.getAttr(ctrlName+'.'+attr) * mirrorInfo[index]*-1)
-        except RuntimeError, e:
+        except RuntimeError:
             pass #silently skip locked attrs
             
 def mirrorSelectedCtrls():
@@ -476,7 +475,7 @@ def keyLimb(ctrlName):
         limbShape = getLimbNodeShape(kctrl)
         if limbShape in doneNodes:
             for attr in cmds.listAttr(limbShape,k=True,ud=True) or []:
-             cmds.setKeyframe('%s.%s'%(limbShape,attr))
+                cmds.setKeyframe('%s.%s'%(limbShape,attr))
         doneNodes.append(kctrl)
         doneNodes.append(limbShape)
         
@@ -495,9 +494,9 @@ def keySelectedCharacter():
     if not ctrls:
         return
     limbNodes=[]
-    for ctrl in getAllCtrls(ctrls[0]):
-        cmds.setKeyframe(ctrl,hierarchy='none',shape=0)
-        limbNodes.append(getLimbNodeShape(ctrl))
+    for ctrlName in getAllCtrls(ctrls[0]):
+        cmds.setKeyframe(ctrlName,hierarchy='none',shape=0)
+        limbNodes.append(getLimbNodeShape(ctrlName))
     limbNodes=set(limbNodes) #remove duplicates
     for limb in limbNodes:
         for attr in cmds.listAttr(limb,k=True,ud=True) or []:
@@ -540,37 +539,37 @@ def snapIKFK(ikctrl):
 
     #loop through twice, first doing end ctrls, then doing aims
     results = dict()
-    for ctrl in allIKCtrls:
-        if not cmds.objExists(ctrl+'.snapParents'):
-            results[ctrl]=None
+    for ctrlName in allIKCtrls:
+        if not cmds.objExists(ctrlName+'.snapParents'):
+            results[ctrlName]=None
             continue
-        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
+        snapParents = cmds.listConnections(ctrlName+'.snapParents',s=1,d=0) or []
         #if there is one snap parent this is an end effector ctrl
         #do a simple snap
         if len(snapParents)==1:
-            results[ctrl]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
+            results[ctrlName]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
             
 
-    for ctrl in allIKCtrls:
-        if not cmds.objExists(ctrl+'.snapParents'):
-            results[ctrl]=None
+    for ctrlName in allIKCtrls:
+        if not cmds.objExists(ctrlName+'.snapParents'):
+            results[ctrlName]=None
             continue
-        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
+        snapParents = cmds.listConnections(ctrlName+'.snapParents',s=1,d=0) or []
         #Use three parents to compute aim position
         if len(snapParents)==3:
             aimV = getAimVector(snapParents[0],snapParents[1],snapParents[2])
             aimXform = rigmath.Transform(aimV)
-            results[ctrl]=aimXform.get()
+            results[ctrlName]=aimXform.get()
 
     #bug fix for some IK limbs that need multiple snaps to reach the goal
     #This is because IK hierarchies can be arbitrary, and it's difficult to determine
     #which controls move others, so this takes an iterative approach
     for i in range(4):
-        for ctrl,value in results.iteritems():
+        for ctrlName,value in results.iteritems():
             if not value:
-                resetCtrl(ctrl)
+                resetCtrl(ctrlName)
             else:
-                cmds.xform(ctrl,ws=True,m=value)
+                cmds.xform(ctrlName,ws=True,m=value)
 
     # Turn on IK
     limbNode = getLimbNodeShape(allIKCtrls[0])
@@ -586,19 +585,19 @@ def snapFKIK(fkctrl):
 
     #loop through getting transforms, then apply them.
     results = dict()
-    for ctrl in allFKCtrls:
-        if not cmds.objExists(ctrl+'.snapParents'):
-            results[ctrl]=None 
+    for fkCtrl in allFKCtrls:
+        if not cmds.objExists(fkCtrl+'.snapParents'):
+            results[fkCtrl]=None 
             continue
-        snapParents = cmds.listConnections(ctrl+'.snapParents',s=1,d=0) or []
+        snapParents = cmds.listConnections(fkCtrl+'.snapParents',s=1,d=0) or []
         if len(snapParents)==1:
-            results[ctrl]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
+            results[fkCtrl]=cmds.xform(snapParents[0],q=True,ws=True,m=True)
             
-    for ctrl,value in results.iteritems():
+    for fkCtrl,value in results.iteritems():
         if not value:
-            resetCtrl(ctrl)
+            resetCtrl(fkCtrl)
         else:
-            cmds.xform(ctrl,ws=True,m=value)
+            cmds.xform(fkCtrl,ws=True,m=value)
     
     # Turn on FK
     limbNode = getLimbNodeShape(allFKCtrls[0])

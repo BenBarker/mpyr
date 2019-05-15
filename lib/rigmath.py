@@ -33,6 +33,9 @@ class Vector(object):
     '''
     def __init__(self,*args):
         object.__init__(self)
+        self.x=None
+        self.y=None
+        self.z=None
         if args:
             self.set(*args)
         else:
@@ -47,7 +50,7 @@ class Vector(object):
         if idx>len(self)-1:
             raise IndexError('index on Vector out of range')
         attrs=[self.x,self.y,self.z]
-        args[idx]=float(val)
+        attrs[idx]=float(val)
             
     def __repr__(self):
         return 'Vector(%.3f,%.3f,%.3f)'%(self.x,self.y,self.z)
@@ -111,7 +114,6 @@ class Vector(object):
     def setFromAxisName(self,axis='x'):
         '''Set from a given axis name. Alse accepts negative names ('-x' for example)'''
         axisMap={'x':[1,0,0],'y':[0,1,0],'z':[0,0,1]}
-        negative=False
         axis=axis.lower()
         vectorValues=axisMap[axis[-1]]
         if axis[0]=='-':
@@ -135,7 +137,7 @@ class Vector(object):
     def __mul__(self,other):
         newV=Vector()
         if isinstance(other,Vector):
-            newV.setFromVector(self.x * other.x, self.y * other.y, self.z * other.z)
+            newV.set(self.x * other.x, self.y * other.y, self.z * other.z)
         elif isinstance(other,Transform):
             a1,a2,a3 = self.get()
             b11,b12,b13,b14,b21,b22,b23,b24,b31,b32,b33,b34,b41,b42,b43,b44 = other.get()
@@ -209,6 +211,7 @@ class Transform(object):
     '''4x4 object transform class'''
     def __init__(self,*args):
         object.__init__(self)
+        self._matrix=None
         self.identity()
         if args:
             self.set(*args)
@@ -402,11 +405,6 @@ class Transform(object):
                 a31*b1,a32*b2,a33*b3,a34,a41,a42,a43,a44)
         else:
             raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" %(self.__class__.__name__ ,other.__class__.__name__))
-    def __getitem__(self,key):
-        return self._matrix[key]
-
-    def __setitem__(self,key,value):
-        self._matrix[key]=float(value)
 
     def reflect(self,plane=None):
         '''reflect the transform about a plane specified as a Vector. If none given the yz
@@ -477,7 +475,7 @@ class Transform(object):
         inv[15] = a[0]*a[5]*a[10] - a[0]*a[6]*a[9] - a[4]*a[1]*a[10] + \
                   a[4]*a[2]*a[9] + a[8]*a[1]*a[6] - a[8]*a[2]*a[5]
 
-        det = a[0]*inv[0] + a[1]*inv[4] + a[2]*inv[8] + a[3]*inv[12];
+        det = a[0]*inv[0] + a[1]*inv[4] + a[2]*inv[8] + a[3]*inv[12]
         if (det == 0):
             raise ZeroDivisionError("matrix is not invertable")
         det = 1.0 / det

@@ -8,7 +8,7 @@ def getLowestParent(nodeList):
     
     #exclude any node parented to another node in the nodeList.
     #They will automatically share the lowest parent.
-    for node in nodelist:
+    for node in nodeList:
         try:
             nodePar = cmds.listRelatives(node,p=True,fullPath=True)[0]
 
