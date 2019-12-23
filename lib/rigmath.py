@@ -143,9 +143,9 @@ class Vector(object):
             b11,b12,b13,b14,b21,b22,b23,b24,b31,b32,b33,b34,b41,b42,b43,b44 = other.get()
             newV.setFromList(
                 [
-                b11*a1 + b21*a2 + b31*a3 + b41,
-                b21*a1 + b22*a2 + b22*a3 + b42,
-                b31*a2 + b32*a2 + b33*a3 + b43
+                b11*a1 + b12*a2 + b13*a3 + b14,
+                b21*a1 + b22*a2 + b23*a3 + b24,
+                b31*a1 + b32*a2 + b33*a3 + b34
                 ]
             )
         else:
