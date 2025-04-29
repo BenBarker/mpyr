@@ -1,3 +1,5 @@
+# This repo has been migrated to [Codeberg](https://codeberg.org/BBarker/mpyr).
+
 # mpyr
 (Maya Python Rigging)
 
